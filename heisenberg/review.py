@@ -322,7 +322,7 @@ def extract_proteins_from_text(text: str) -> list[str]:
     match = re.search(r"\[.*?\]", raw, re.DOTALL)
     if match:
         try:
-            proteins = eval(match.group())  # safe-ish: only short names
+            proteins = ast.literal_eval(match.group())
             if isinstance(proteins, list):
                 return [str(p) for p in proteins]
         except Exception:
