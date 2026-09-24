@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # CPU-only gnina runtime for Modal. Uses gnina's official prebuilt
 # "somewhat static" release binary (openbabel/boost/libtorch are statically
 # linked in) instead of compiling from source or vendoring the ~60GB
@@ -42,16 +44,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       curl ca-certificates bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest \
-      | tar -xvj -C /usr/local bin/micromamba \
-    && micromamba create -y --override-channels -c conda-forge -p /opt/fpocket-env fpocket
+# Pinned to micromamba 2.9.0-0 and checksum-verified at fetch time, rather
+# than piping the "latest" redirect straight into tar.
+ADD --checksum=sha256:366cd9cd8be14df1ab8ed50352a82111082a36686b2d389fdb79a92c3fafb3e3 \
+    https://github.com/mamba-org/micromamba-releases/releases/download/2.9.0-0/micromamba-linux-64 \
+    /usr/local/bin/micromamba
+RUN chmod +x /usr/local/bin/micromamba \
+    && micromamba create -y --override-channels -c conda-forge -p /opt/fpocket-env fpocket=4.2.3
 
 FROM --platform=linux/amd64 python:3.11-slim AS runtime
 
 COPY --from=cuda-libs-builder /cuda-libs/ /usr/local/lib/cuda-libs/
 RUN echo /usr/local/lib/cuda-libs > /etc/ld.so.conf.d/cuda-libs.conf && ldconfig
 
-ADD https://github.com/gnina/gnina/releases/latest/download/gnina.cuda12.8.static /usr/local/bin/gnina
+# Pinned to gnina v1.3.3 and checksum-verified at fetch time, rather than
+# tracking the "latest" release tag.
+ADD --checksum=sha256:3340c1f49cd3c7c84d8699182a1c6af13c7fa2a22448d1204640446106f72172 \
+    https://github.com/gnina/gnina/releases/download/v1.3.3/gnina.cuda12.8.static \
+    /usr/local/bin/gnina
 RUN chmod +x /usr/local/bin/gnina
 
 # fpocket: Tier 2 of the binding-site box fallback (predicted pocket, used
