@@ -37,7 +37,11 @@ export async function pollDockJob(
   jobId: string,
   since: number
 ): Promise<DockStatusResponse> {
-  const res = await fetch(jobApiUrl(`/status/${jobId}?since=${since}`))
+  const res = await fetch(
+    jobApiUrl(
+      `/status/${encodeURIComponent(jobId)}?since=${encodeURIComponent(String(since))}`
+    )
+  )
 
   if (!res.ok) {
     const text = await res.text()
