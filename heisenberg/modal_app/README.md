@@ -50,11 +50,45 @@ your current working directory, not the script's location).
 The first deploy builds the Dockerfile stage on Modal's build infrastructure
 (downloads the CUDA pip wheels + the gnina binary — a few minutes, one-time
 cost). Modal caches that image; later deploys only rebuild if `Dockerfile`
-or the `pip_install` line changes. This prints a URL like
-`https://<workspace>--gnina-worker-dock.modal.run`.
+or the `pip_install` line changes. This prints two URLs:
 
-Set it as `GNINA_ENDPOINT_URL` in `.env` (and in whatever environment runs
-the Next.js app / `agent3.py`).
+- `https://<workspace>--gnina-worker-dock.modal.run` — the original
+  synchronous `dock` endpoint. Set as `GNINA_ENDPOINT_URL` in `.env` (used
+  only by `agent3.py`'s standalone pipeline today).
+- `https://<workspace>--gnina-worker-job-api.modal.run` — the async
+  submit/poll job queue (`/submit`, `/status/{job_id}`) used by the Next.js
+  app. Set as `GNINA_JOB_API_URL` in `.env`. Unauthenticated by design (see
+  below) — anyone with this URL can submit/poll jobs.
+
+## Async job queue (`/submit`, `/status/{job_id}`)
+
+`dock` is a single blocking HTTP call — fine for `agent3.py`, but the
+Next.js app's dock UI can run many ligands across several targets, well
+past what a Vercel serverless function is allowed to stay open for. Instead
+of holding a connection open, the app now:
+
+1. `POST /submit` with `{targets, round}` (same shape as the old
+   `app/api/dock` body) — validates the batch (`MAX_TARGETS_PER_JOB=10`,
+   `MAX_LIGANDS_PER_JOB=50`, both in `gnina_worker.py`), spawns
+   `run_docking_job` in the background via `.spawn()`, and returns
+   `{jobId}` immediately.
+2. `GET /status/{job_id}?since=N` — returns `{events, nextIndex, done}`,
+   where `events` is every event appended since index `N`. Poll this on an
+   interval until `done` is `true`.
+
+`run_docking_job` writes progress into a `modal.Dict` (`gnina-dock-jobs`) as
+it processes each target, so `/status` can return partial results while the
+job is still running — mirroring the `progress` / `target_complete` /
+`complete` / `error` events the old SSE route used to stream.
+
+Both endpoints are unauthenticated by design — anyone with the URL can
+submit/poll jobs. Unlike `dock`, `/submit` triggers background compute the
+caller doesn't have to wait on, which is a much easier endpoint to abuse if
+left open, so the only backstops are `MAX_TARGETS_PER_JOB`,
+`MAX_LIGANDS_PER_JOB`, and a hard `JOB_TIMEOUT_SECONDS=3600` ceiling on
+`run_docking_job` itself. If abuse becomes a real problem, the endpoint
+previously required an `X-Gnina-Auth` header checked against a Modal
+secret — see git history on this file to reinstate it.
 
 ## Local test / iteration
 

@@ -33,6 +33,7 @@ import re
 import subprocess
 import tempfile
 import time
+import uuid
 from pathlib import Path
 
 import modal
@@ -42,6 +43,16 @@ BOX_PADDING_ANGSTROM = 10.0
 EXHAUSTIVENESS = 8
 GNINA_TIMEOUT_SECONDS = 180
 FPOCKET_TIMEOUT_SECONDS = 60
+
+# Per-ligand Modal function timeout — matches the existing `dock` endpoint's
+# budget (embed + 3-tier box search + gnina). The job orchestrator below
+# processes targets sequentially (parity with the old Next.js loop) but
+# ligands within a target concurrently, so a job's wall-clock time is
+# bounded by num_targets * DOCK_LIGAND_TIMEOUT_SECONDS in the worst case.
+DOCK_LIGAND_TIMEOUT_SECONDS = 600
+MAX_TARGETS_PER_JOB = 10
+MAX_LIGANDS_PER_JOB = 50
+JOB_TIMEOUT_SECONDS = 3600  # hard ceiling on one job's total wall-clock time
 
 LIGAND_BOX_PADDING = 4.0   # GNINA/Vina's own --autobox_add default
 POCKET_BOX_PADDING = 4.0
@@ -71,6 +82,13 @@ image = modal.Image.from_dockerfile("modal_app/Dockerfile").pip_install(
 
 app = modal.App("gnina-worker", image=image)
 
+# Job store for the async submit/poll path (see run_docking_job / job_api
+# below). Keyed by job_id -> {"events": [...], "done": bool}. Events are
+# append-only and shaped exactly like the old SSE events the Next.js route
+# used to stream, so the frontend's event-handling logic didn't need to
+# change, only the transport (poll instead of a held-open connection).
+jobs_dict = modal.Dict.from_name("gnina-dock-jobs", create_if_missing=True)
+
 
 class Ligand(BaseModel):
     name: str
@@ -81,6 +99,26 @@ class DockRequest(BaseModel):
     protein_pdb_b64: str
     ligands: list[Ligand]
     samples_per_complex: int = 10
+
+
+class LigandPayload(BaseModel):
+    name: str
+    smiles: str
+    mechanism: str = ""
+    fdaStatus: str = ""
+    source: str = ""
+
+
+class DockTargetPayload(BaseModel):
+    protein: str
+    pdbId: str | None = None
+    pdbContentB64: str | None = None
+    ligands: list[LigandPayload]
+
+
+class SubmitRequest(BaseModel):
+    targets: list[DockTargetPayload]
+    round: int = 1
 
 
 def _box_from_coords(
@@ -358,3 +396,179 @@ def dock(req: DockRequest) -> dict:
         "processing_time_seconds": round(time.time() - start, 2),
         "binding_site_method": box.get("method"),
     }
+
+
+@app.function(cpu=2, memory=4096, timeout=DOCK_LIGAND_TIMEOUT_SECONDS)
+def dock_ligand_task(
+    protein_pdb_b64: str, name: str, smiles: str, samples_per_complex: int
+) -> dict:
+    """One ligand, one Modal container — invoked via .map() from
+    run_docking_job so Modal autoscales a container per in-flight ligand,
+    the same concurrency the old Next.js route got by firing one HTTP
+    request per ligand. Never raises: failures come back as {"ok": False}
+    so a single bad ligand can't take down the rest of the map()."""
+    try:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            receptor_pdb = Path(tmp_dir) / "receptor.pdb"
+            receptor_pdb.write_bytes(base64.b64decode(protein_pdb_b64))
+            box = _determine_box(receptor_pdb)
+            result = _dock_one(receptor_pdb, box, name, smiles, samples_per_complex)
+            return {"ok": True, "result": result}
+    except Exception as e:
+        return {"ok": False, "name": name, "error": str(e)}
+
+
+def _append_job_event(job_id: str, event: dict) -> None:
+    job = jobs_dict.get(job_id) or {"events": [], "done": False}
+    job["events"].append(event)
+    jobs_dict[job_id] = job
+
+
+def _mark_job_done(job_id: str) -> None:
+    job = jobs_dict.get(job_id) or {"events": [], "done": False}
+    job["done"] = True
+    jobs_dict[job_id] = job
+
+
+@app.function(cpu=0.25, memory=512, timeout=JOB_TIMEOUT_SECONDS)
+def run_docking_job(job_id: str, targets: list[dict], round: int) -> None:
+    """Background orchestrator, spawned (fire-and-forget) from /submit.
+    Mirrors the old app/api/dock/route.ts loop: targets processed one at a
+    time, ligands within a target docked concurrently. Progress is written
+    to jobs_dict as it happens so /status can return partial results."""
+    all_results: list[dict] = []
+    try:
+        for target in targets:
+            protein = target["protein"]
+            pdb_id = target.get("pdbId")
+            pdb_b64 = target.get("pdbContentB64")
+            ligands = [lig for lig in target["ligands"] if lig.get("smiles")]
+
+            if not pdb_b64:
+                _append_job_event(job_id, {
+                    "type": "error",
+                    "message": f"No PDB data for {protein}, skipping",
+                })
+                continue
+            if not ligands:
+                _append_job_event(job_id, {
+                    "type": "error",
+                    "message": f"No valid ligands for {protein}, skipping",
+                })
+                continue
+
+            _append_job_event(job_id, {
+                "type": "progress",
+                "protein": protein,
+                "drugIndex": 0,
+                "drugTotal": len(ligands),
+                "message": f"Starting docking for {protein} ({len(ligands)} ligands)",
+            })
+
+            ligands_by_name = {lig["name"]: lig for lig in ligands}
+            inputs = [(pdb_b64, lig["name"], lig["smiles"], 10) for lig in ligands]
+
+            target_results: list[dict] = []
+            completed = 0
+            for out in dock_ligand_task.starmap(inputs, order_outputs=False):
+                completed += 1
+                if out["ok"]:
+                    r = out["result"]
+                    orig = ligands_by_name.get(r["name"], {})
+                    target_results.append({
+                        "name": r["name"],
+                        "confidenceScore": r["confidence_score"],
+                        "confidenceRaw": r["confidence_raw"],
+                        "mechanism": orig.get("mechanism", ""),
+                        "fdaStatus": orig.get("fdaStatus", ""),
+                        "source": orig.get("source", ""),
+                        "proteinTarget": protein,
+                        "pdbId": pdb_id or "",
+                        "round": round,
+                        "allPoses": r.get("all_poses"),
+                    })
+                    _append_job_event(job_id, {
+                        "type": "progress",
+                        "protein": protein,
+                        "drugIndex": completed,
+                        "drugTotal": len(ligands),
+                        "message": f"Completed {r['name']} against {protein} ({completed}/{len(ligands)})",
+                    })
+                else:
+                    _append_job_event(job_id, {
+                        "type": "error",
+                        "message": f"Docking failed for {out['name']} against {protein}: {out['error']}",
+                    })
+
+            target_results.sort(key=lambda r: r["confidenceScore"], reverse=True)
+            all_results.extend(target_results)
+            _append_job_event(job_id, {
+                "type": "target_complete",
+                "protein": protein,
+                "results": target_results,
+            })
+
+        all_results.sort(key=lambda r: r["confidenceScore"], reverse=True)
+        _append_job_event(job_id, {"type": "complete", "allResults": all_results})
+    except Exception as e:
+        _append_job_event(job_id, {"type": "error", "message": str(e)})
+    finally:
+        _mark_job_done(job_id)
+
+
+@app.function(cpu=0.25, memory=512, timeout=30)
+@modal.asgi_app()
+def job_api():
+    """Submit/poll endpoints for the async docking job queue. Kept as a
+    separate web endpoint from `dock` so agent3.py's direct synchronous
+    calls to `dock` are unaffected.
+
+    Unauthenticated by request — anyone with the URL can submit/poll jobs.
+    MAX_TARGETS_PER_JOB / MAX_LIGANDS_PER_JOB / JOB_TIMEOUT_SECONDS above are
+    the only backstop against abuse."""
+    import fastapi
+
+    web_app = fastapi.FastAPI()
+
+    # Plain `def`, not `async def` — every call in here (jobs_dict get/set,
+    # run_docking_job.spawn) is Modal's blocking interface. Starlette runs
+    # sync route handlers in a thread pool, so this keeps the event loop
+    # free instead of triggering Modal's AsyncUsageWarning.
+    @web_app.post("/submit")
+    def submit(req: SubmitRequest):
+        if len(req.targets) > MAX_TARGETS_PER_JOB:
+            raise fastapi.HTTPException(
+                status_code=400,
+                detail=f"job requests {len(req.targets)} targets, max is {MAX_TARGETS_PER_JOB}",
+            )
+        total_ligands = sum(len(t.ligands) for t in req.targets)
+        if total_ligands == 0:
+            raise fastapi.HTTPException(status_code=400, detail="no ligands provided")
+        if total_ligands > MAX_LIGANDS_PER_JOB:
+            raise fastapi.HTTPException(
+                status_code=400,
+                detail=f"job requests {total_ligands} ligands, max is {MAX_LIGANDS_PER_JOB}",
+            )
+
+        job_id = uuid.uuid4().hex
+        jobs_dict[job_id] = {"events": [], "done": False}
+        run_docking_job.spawn(
+            job_id,
+            [t.model_dump() for t in req.targets],
+            req.round,
+        )
+        return {"jobId": job_id}
+
+    @web_app.get("/status/{job_id}")
+    def status(job_id: str, since: int = 0):
+        job = jobs_dict.get(job_id)
+        if job is None:
+            raise fastapi.HTTPException(status_code=404, detail="job not found")
+
+        return {
+            "events": job["events"][since:],
+            "nextIndex": len(job["events"]),
+            "done": job["done"],
+        }
+
+    return web_app

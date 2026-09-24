@@ -11,6 +11,7 @@ import type {
   ReviewDrug,
   DockingTarget,
   DockingResult,
+  DockJobEvent,
   ReasoningDecision,
   ChatMessage,
   ChatAction,
@@ -560,62 +561,72 @@ export default function Home() {
     )
 
     try {
-      const res = await fetch("/api/dock", {
+      const submitRes = await fetch("/api/dock/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targets: dockTargets, round }),
       })
 
-      if (!res.ok) throw new Error(`Dock API error: ${res.status}`)
+      if (!submitRes.ok)
+        throw new Error(`Dock submit error: ${submitRes.status}`)
+
+      const { jobId } = (await submitRes.json()) as { jobId: string }
 
       let completedResults: DockingResult[] = []
+      let since = 0
+      let done = false
 
-      await readSSEStream(res, (event) => {
-        if (event.type === "progress") {
-          setStatusMessage(event.message as string)
-          // Track currently-docking drug (use ref for latest drugs list)
-          const currentDrugName = event.currentDrug as string | null
-          const latestDrugs = drugsRef.current
-          if (currentDrugName && latestDrugs) {
-            const match = latestDrugs.find(
-              (d) => d.name.toLowerCase() === currentDrugName.toLowerCase()
-            )
-            if (match) {
-              setSimulationRunningDrug(match)
-              setDrugSimStatuses((prev) => ({
-                ...prev,
-                [match.id]: "running",
-              }))
-            }
-          }
-        } else if (event.type === "target_complete") {
-          const targetResults = event.results as DockingResult[]
-          completedResults = [...completedResults, ...targetResults]
+      // Docking runs in the background on Modal (no held-open connection,
+      // no Vercel duration limit) — just poll for new events until done.
+      while (!done) {
+        await new Promise((resolve) => setTimeout(resolve, 2000))
 
-          const latestDrugs = drugsRef.current
-          setDrugSimStatuses((prev) => {
-            const next = { ...prev }
-            for (const r of targetResults) {
-              const matchingDrug = latestDrugs?.find(
-                (d) => d.name.toLowerCase() === r.name.toLowerCase()
-              )
-              if (matchingDrug) {
-                next[matchingDrug.id] = "complete"
+        const statusRes = await fetch(
+          `/api/dock/status?jobId=${jobId}&since=${since}`
+        )
+        if (!statusRes.ok)
+          throw new Error(`Dock status error: ${statusRes.status}`)
+
+        const status = (await statusRes.json()) as {
+          events: DockJobEvent[]
+          nextIndex: number
+          done: boolean
+        }
+        since = status.nextIndex
+        done = status.done
+
+        for (const event of status.events) {
+          if (event.type === "progress") {
+            setStatusMessage(event.message)
+          } else if (event.type === "target_complete") {
+            const targetResults = event.results
+            completedResults = [...completedResults, ...targetResults]
+
+            const latestDrugs = drugsRef.current
+            setDrugSimStatuses((prev) => {
+              const next = { ...prev }
+              for (const r of targetResults) {
+                const matchingDrug = latestDrugs?.find(
+                  (d) => d.name.toLowerCase() === r.name.toLowerCase()
+                )
+                if (matchingDrug) {
+                  next[matchingDrug.id] = "complete"
+                }
               }
+              return next
+            })
+          } else if (event.type === "complete") {
+            completedResults = event.allResults
+          } else if (event.type === "error") {
+            const msg = event.message
+            if (msg.includes("No valid ligands") || msg.includes("skipping")) {
+              console.warn("Docking skipped:", msg)
+            } else {
+              console.error("Docking error:", msg)
             }
-            return next
-          })
-        } else if (event.type === "complete") {
-          completedResults = event.allResults as DockingResult[]
-        } else if (event.type === "error") {
-          const msg = event.message as string
-          if (msg.includes("No valid ligands") || msg.includes("skipping")) {
-            console.warn("Docking skipped:", msg)
-          } else {
-            console.error("Docking error:", msg)
           }
         }
-      })
+      }
 
       // Update state with all results
       const newAllResults = [...allDockingResults, ...completedResults]
