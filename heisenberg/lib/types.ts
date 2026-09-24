@@ -89,8 +89,10 @@ export interface ChatAction {
   variant?: "primary" | "secondary" | "outline"
 }
 
-// SSE event types for docking streaming
-export interface DockSSEProgress {
+// Docking job event types — emitted by the Modal orchestrator
+// (modal_app/gnina_worker.py:run_docking_job) into a per-job event log that
+// the frontend polls incrementally via /api/dock/status.
+export interface DockJobProgress {
   type: "progress"
   protein: string
   drugIndex: number
@@ -98,27 +100,37 @@ export interface DockSSEProgress {
   message: string
 }
 
-export interface DockSSETargetComplete {
+export interface DockJobTargetComplete {
   type: "target_complete"
   protein: string
   results: DockingResult[]
 }
 
-export interface DockSSEComplete {
+export interface DockJobComplete {
   type: "complete"
   allResults: DockingResult[]
 }
 
-export interface DockSSEError {
+export interface DockJobError {
   type: "error"
   message: string
 }
 
-export type DockSSEEvent =
-  | DockSSEProgress
-  | DockSSETargetComplete
-  | DockSSEComplete
-  | DockSSEError
+export type DockJobEvent =
+  | DockJobProgress
+  | DockJobTargetComplete
+  | DockJobComplete
+  | DockJobError
+
+export interface DockSubmitResponse {
+  jobId: string
+}
+
+export interface DockStatusResponse {
+  events: DockJobEvent[]
+  nextIndex: number
+  done: boolean
+}
 
 /**
  * Shorten a drug name — if longer than maxLen, fall back to CID_xxx format.
