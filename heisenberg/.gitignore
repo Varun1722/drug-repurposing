@@ -224,3 +224,5 @@ old-outputs
 .claude
 tsconfig.tsbuildinfo
 pipeline_state.json
+
+globals.css
