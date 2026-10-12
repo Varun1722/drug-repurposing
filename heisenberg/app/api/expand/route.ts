@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { queryOpenAI, parseJsonResponse } from "@/lib/openai"
+import { queryPromptStructured, LLMOutputError } from "@/lib/openai"
+import { DrugNameListSchema } from "@/lib/llm-schemas"
 import { lookupSmiles, search3dSimilar } from "@/lib/pubchem"
 import type { ReasoningDecision, DockingTarget, DockingResult, Ligand } from "@/lib/types"
 import { shortenDrugName } from "@/lib/types"
@@ -76,18 +77,26 @@ export async function POST(req: Request) {
 
       // If no drug names provided, ask the LLM
       if (drugNames.length === 0 && decision.drugClass) {
-        const system =
-          "You are a pharmacology expert. Return ONLY a JSON array of drug names."
-        const user =
-          `List 10 FDA-approved drugs in the class "${decision.drugClass}" ` +
-          `that might bind to these proteins: ${proteins.join(", ")}. ` +
-          `Return ONLY a JSON array of drug name strings.`
-        const raw = await queryOpenAI(system, user)
-        const parsed = parseJsonResponse(raw)
-        if (Array.isArray(parsed)) {
-          drugNames = parsed.map(String)
-        } else if (parsed.drugs && Array.isArray(parsed.drugs)) {
-          drugNames = (parsed.drugs as string[]).map(String)
+        try {
+          const parsed = await queryPromptStructured(
+            "analysis/class_expansion",
+            {
+              drug_class: decision.drugClass,
+              proteins: proteins.join(", "),
+              exclude:
+                allDockingResults
+                  .slice(0, 20)
+                  .map((r) => r.name)
+                  .join(", ") || "(none)",
+            },
+            DrugNameListSchema
+          )
+          drugNames = parsed.drug_names
+        } catch (error) {
+          if (!(error instanceof LLMOutputError)) throw error
+          // No names -> no new ligands -> the route returns an empty
+          // newTargets list, which the UI already treats as "nothing found".
+          console.error("Expand: unusable LLM output:", error.kind, error.message)
         }
       }
 

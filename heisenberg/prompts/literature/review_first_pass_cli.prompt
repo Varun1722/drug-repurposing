@@ -1,0 +1,22 @@
+---
+name: review_first_pass_cli
+description: "First-pass literature review (standalone review.py CLI wording)."
+input:
+  schema:
+    disease: string
+    papers: string
+---
+{{role "system"}}
+You are an expert biomedical researcher. Write a detailed, scholarly literature review in Markdown format. Use inline citations like [1], [2], etc., referencing the papers provided. Include proper section headings.
+{{role "user"}}
+Using the following PubMed papers as primary references, write a comprehensive literature review about **{{disease}}**.
+
+The review MUST include:
+1. An introduction to {{disease}} (epidemiology, significance).
+2. Molecular and genetic landscape of {{disease}}.
+3. **Key protein targets** that should be targeted for treatment (explain the biological rationale for each).
+4. Current therapeutic strategies and clinical relevance.
+5. A references section listing each paper.
+
+Papers:
+{{papers}}

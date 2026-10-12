@@ -1,4 +1,9 @@
-import { queryOpenAI, parseJsonResponse } from "@/lib/openai"
+import { queryPrompt, queryPromptStructured, LLMOutputError } from "@/lib/openai"
+import {
+  ProteinListSchema,
+  DrugProteinMapSchema,
+  type DrugProteinMap,
+} from "@/lib/llm-schemas"
 import { webSearch, formatSearchResultsForPrompt } from "@/lib/exa"
 import { searchCompoundsForTarget } from "@/lib/pubchem"
 import type { ReviewDrug } from "@/lib/types"
@@ -190,26 +195,24 @@ function buildRepurposingQuery(proteins: string[]): string {
 // ---------- Protein extraction ----------
 
 async function extractProteinsFromText(text: string): Promise<string[]> {
-  const system =
-    "You are a biomedical research assistant. " +
-    "Extract a concise list of protein targets from the following text. " +
-    "Return ONLY a JSON array of short protein names/symbols, " +
-    'e.g. ["EGFR", "HER2", "BRAF"]. No explanation.'
-  const raw = await queryOpenAI(system, text)
-
-  const match = raw.match(/\[[\s\S]*?\]/)
-  if (match) {
-    try {
-      const parsed = JSON.parse(match[0])
-      if (Array.isArray(parsed)) return parsed.map(String)
-    } catch {
-      // fallback
-    }
+  try {
+    const result = await queryPromptStructured(
+      "extraction/protein_list",
+      { text },
+      ProteinListSchema
+    )
+    return cleanNames(result.proteins)
+  } catch (error) {
+    if (!(error instanceof LLMOutputError)) throw error
+    // Empty list -> the caller retries via extractProteinsFallback.
+    console.error("Protein extraction: unusable LLM output:", error.kind, error.message)
+    return []
   }
-  return raw
-    .split(",")
-    .map((t) => t.trim().replace(/['"[\]]/g, ""))
-    .filter(Boolean)
+}
+
+/** Trim, drop blanks, and de-duplicate while keeping order. */
+function cleanNames(names: string[]): string[] {
+  return [...new Set(names.map((n) => n.trim()).filter(Boolean))]
 }
 
 /**
@@ -227,24 +230,18 @@ async function extractProteinsFallback(disease: string): Promise<string[]> {
   if (searchResults.length === 0) return []
   const searchResultsText = formatSearchResultsForPrompt(searchResults)
 
-  const system =
-    "You are a biomedical research assistant. Based ONLY on the search " +
-    "results provided, return ONLY a JSON array of 3-5 well-known protein " +
-    "target names/symbols implicated in the disease given. No explanation."
-  const user =
-    `Disease: ${disease}\n\nSearch results:\n${searchResultsText}`
-  const raw = await queryOpenAI(system, user)
-
-  const match = raw.match(/\[[\s\S]*?\]/)
-  if (match) {
-    try {
-      const parsed = JSON.parse(match[0])
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(String)
-    } catch {
-      // fall through
-    }
+  try {
+    const result = await queryPromptStructured(
+      "extraction/protein_list_fallback",
+      { disease, search_results: searchResultsText },
+      ProteinListSchema
+    )
+    return cleanNames(result.proteins)
+  } catch (error) {
+    if (!(error instanceof LLMOutputError)) throw error
+    console.error("Protein fallback: unusable LLM output:", error.kind, error.message)
+    return []
   }
-  return []
 }
 
 // ---------- Repurposing candidates ----------
@@ -266,29 +263,11 @@ async function discoverRepurposingCandidates(
     ? formatSearchResultsForPrompt(searchResults)
     : "(No web search results found.)"
 
-  const system =
-    "You are a computational pharmacology expert specialising in drug " +
-    "repurposing and polypharmacology. Write a detailed Markdown section " +
-    "for a literature review, grounded ONLY in the web search results " +
-    "provided below. Be exhaustive: include drugs from cardiology, " +
-    "psychiatry, infectious disease, metabolic disorders, autoimmune " +
-    "conditions, and any other field. Cite sources using their [N] index " +
-    "from the search results below."
-  const user =
-    `The following proteins have been identified as therapeutic targets ` +
-    `in **${disease}**: ${proteins.join(", ")}.\n\n` +
-    `Web search results on repurposing candidates:\n${searchResultsText}\n\n` +
-    `Using ONLY the evidence above, identify FDA-approved drugs from ANY ` +
-    `therapeutic area — not just oncology — that have known or ` +
-    `computationally predicted interactions with these proteins. Consider:\n` +
-    `- Molecular docking studies showing binding affinity\n` +
-    `- Shared binding-site homology with known inhibitors\n` +
-    `- Off-target activity reported in pharmacovigilance data\n` +
-    `- Structural similarity (Tanimoto ≥ 0.5) to known ligands\n` +
-    `- Drug-gene interaction databases (DGIdb, DrugBank, STITCH)\n` +
-    `- Repurposing screens or virtual screening hits\n\n` +
-    `Write sections in Markdown with at least 10 drugs, citing sources by [N].`
-  return queryOpenAI(system, user)
+  return queryPrompt("literature/repurposing_candidates", {
+    disease,
+    proteins: proteins.join(", "),
+    search_results: searchResultsText,
+  })
 }
 
 // ---------- Drug-protein map extraction ----------
@@ -298,50 +277,28 @@ async function extractDrugProteinMap(
   disease: string,
   proteins: string[]
 ): Promise<{ drugs: ReviewDrug[]; disease: string; protein_targets: string[] }> {
-  const system =
-    "You are a biomedical data-extraction assistant. " +
-    'Return ONLY valid JSON with no extra text, no markdown fences. ' +
-    'The JSON must be an object with a top-level key "drugs" whose value ' +
-    "is an array of objects. Each object has: " +
-    '"drug" (string), "proteins" (list of target protein symbols), ' +
-    '"mechanism" (string), "fda_status" (string), ' +
-    '"category" ("mainstream" or "repurposing_candidate"), ' +
-    '"trial_status_for_targets" (string: describe if this drug has been tested ' +
-    'in clinical trials specifically for the listed protein targets, e.g. ' +
-    '"Phase 2 trial for KRAS G12C inhibition in NSCLC" or "No known trials for these targets").'
-  const user =
-    `From the following literature review sections about ${disease}, ` +
-    `extract EVERY drug mentioned — both mainstream drugs for this ` +
-    `disease AND repurposing candidates from other therapeutic areas — ` +
-    `and which of these proteins each may ` +
-    `bind to or react with: ${proteins.join(", ")}.\n\n` +
-    `Mark drugs that are commonly used for ${disease} as ` +
-    `"mainstream". Mark drugs from other therapeutic areas or ` +
-    `speculative candidates as "repurposing_candidate".\n\n` +
-    `Text:\n${drugReviewText}`
-  const raw = await queryOpenAI(system, user)
-  let data = parseJsonResponse(raw) as Record<string, unknown>
-
-  if ("_parse_error" in data) {
-    const fixSystem =
-      "You are a JSON repair assistant. The user will give you malformed " +
-      "JSON. Return ONLY the corrected, valid JSON. No explanation."
-    const fixedRaw = await queryOpenAI(fixSystem, raw)
-    data = parseJsonResponse(fixedRaw) as Record<string, unknown>
+  let rawDrugs: DrugProteinMap["drugs"] = []
+  try {
+    const data = await queryPromptStructured(
+      "extraction/drug_protein_map",
+      { disease, proteins: proteins.join(", "), review_text: drugReviewText },
+      DrugProteinMapSchema
+    )
+    rawDrugs = data.drugs
+  } catch (error) {
+    if (!(error instanceof LLMOutputError)) throw error
+    // Keep the pipeline going with no literature-derived drugs (bioactive
+    // compounds are still discovered per target), but make the gap visible.
+    console.error("Drug map: unusable LLM output:", error.kind, error.message)
   }
 
-  if (!("drugs" in data)) {
-    data = { drugs: Array.isArray(data) ? data : [] }
-  }
-
-  const rawDrugs = (data.drugs as Record<string, unknown>[]) || []
   const drugs: ReviewDrug[] = rawDrugs.map((d) => ({
-    drug: shortenDrugName((d.drug as string) || "", null, 40) || "Unknown",
-    proteins: (d.proteins as string[]) || [],
-    mechanism: (d.mechanism as string) || "",
-    fdaStatus: (d.fdaStatus as string) || (d.fda_status as string) || "",
-    category: (d.category as string) || "",
-    trialStatusForTargets: (d.trialStatusForTargets as string) || (d.trial_status_for_targets as string) || "",
+    drug: shortenDrugName(d.drug, null, 40) || "Unknown",
+    proteins: d.proteins,
+    mechanism: d.mechanism,
+    fdaStatus: d.fda_status,
+    category: d.category,
+    trialStatusForTargets: d.trial_status_for_targets,
   }))
 
   return {
@@ -381,21 +338,10 @@ export async function POST(req: Request) {
 
           // Step 2: Generate literature review via OpenAI
           send({ type: "progress", message: "Generating literature review with OpenAI..." })
-          const systemReview =
-            "You are an expert biomedical researcher. Write a detailed, scholarly " +
-            "literature review in Markdown format. Use inline citations like " +
-            "[1], [2], etc., referencing the papers provided."
-          const userReview =
-            `Using the following PubMed papers, write a comprehensive literature ` +
-            `review about **${disease}**.\n\n` +
-            `Include:\n` +
-            `1. Introduction (epidemiology, significance)\n` +
-            `2. Molecular and genetic landscape\n` +
-            `3. **Key protein targets** for treatment\n` +
-            `4. Current therapeutic strategies\n` +
-            `5. References\n\n` +
-            `Papers:\n${diseasePapersText}`
-          const firstReview = await queryOpenAI(systemReview, userReview)
+          const firstReview = await queryPrompt("literature/review_first_pass", {
+            disease,
+            papers: diseasePapersText,
+          })
 
           // Step 3: Extract protein targets
           send({ type: "progress", message: "Extracting protein targets..." })
@@ -442,19 +388,11 @@ export async function POST(req: Request) {
 
           // Step 5: Generate drug analysis
           send({ type: "progress", message: "Analyzing FDA-approved drugs and candidates..." })
-          const systemDrugs =
-            "You are an expert pharmacology researcher. Write a detailed Markdown " +
-            "section about FDA-approved drugs and repurposing candidates. " +
-            "Be precise about drug names, mechanisms, and protein interactions."
-          const userDrugs =
-            `Continue the review on **${disease}**.\n\n` +
-            `Protein targets: ${proteins.join(", ")}.\n\n` +
-            `Write sections on:\n` +
-            `1. FDA-Approved Drugs and Candidate Compounds per target\n` +
-            `2. Drug-Protein Interaction Summary Table\n` +
-            `3. Conclusion and Future Directions\n\n` +
-            `Papers:\n${drugPapersText}`
-          const drugReview = await queryOpenAI(systemDrugs, userDrugs)
+          const drugReview = await queryPrompt("literature/drug_analysis", {
+            disease,
+            proteins: proteins.join(", "),
+            papers: drugPapersText,
+          })
 
           // Step 6: Repurposing candidates
           send({ type: "progress", message: "Discovering repurposing candidates across therapeutic areas..." })

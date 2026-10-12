@@ -21,7 +21,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 import time
 from datetime import datetime
@@ -34,9 +33,10 @@ load_dotenv()
 # Import existing pipeline functions (NO rewrites)
 # ---------------------------------------------------------------------------
 
+from llm import LLMOutputError, query_prompt, query_prompt_structured
+from prompt_loader import used_prompts
 from review import (
     search_pubmed,
-    query_openai,
     extract_proteins_from_text,
     extract_proteins_fallback,
     format_papers_for_prompt,
@@ -45,9 +45,9 @@ from review import (
     build_repurposing_query,
     _discover_repurposing_candidates,
     _extract_drug_protein_map,
-    _parse_json_response,
     _build_references,
 )
+from llm_schemas import DrugNameList, ReasoningDecision
 from agent2 import (
     search_pdb,
     pick_best_structure,
@@ -120,6 +120,8 @@ def new_state(disease: str) -> dict:
 
 def save_state(state: dict):
     """Persist pipeline state to disk."""
+    # Record which prompt versions (content hashes) produced this run's output.
+    state.setdefault("prompt_versions", {}).update(used_prompts())
     tmp = STATE_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
@@ -151,23 +153,10 @@ def stage_literature(state: dict) -> dict:
 
     # Generate literature review via OpenAI
     print(">> Generating literature review …")
-    system_review = (
-        "You are an expert biomedical researcher. Write a detailed, scholarly "
-        "literature review in Markdown format. Use inline citations like "
-        "[1], [2], etc., referencing the papers provided."
+    first_review = query_prompt(
+        "literature/review_first_pass",
+        disease=disease, papers=disease_papers_text,
     )
-    user_review = (
-        f"Using the following PubMed papers, write a comprehensive literature "
-        f"review about **{disease}**.\n\n"
-        f"Include:\n"
-        f"1. Introduction (epidemiology, significance)\n"
-        f"2. Molecular and genetic landscape\n"
-        f"3. **Key protein targets** for treatment\n"
-        f"4. Current therapeutic strategies\n"
-        f"5. References\n\n"
-        f"Papers:\n{disease_papers_text}"
-    )
-    first_review = query_openai(system_review, user_review)
 
     # Extract protein targets
     print(">> Extracting protein targets …")
@@ -200,22 +189,12 @@ def stage_literature(state: dict) -> dict:
 
     # Generate drug section
     print(">> Generating drug analysis …")
-    offset = len(disease_papers)
-    system_drugs = (
-        "You are an expert pharmacology researcher. Write a detailed Markdown "
-        "section about FDA-approved drugs and repurposing candidates. "
-        "Be precise about drug names, mechanisms, and protein interactions."
+    drug_review = query_prompt(
+        "literature/drug_analysis",
+        disease=disease,
+        proteins=", ".join(proteins),
+        papers=drug_papers_text,
     )
-    user_drugs = (
-        f"Continue the review on **{disease}**.\n\n"
-        f"Protein targets: {', '.join(proteins)}.\n\n"
-        f"Write sections on:\n"
-        f"1. FDA-Approved Drugs and Candidate Compounds per target\n"
-        f"2. Drug-Protein Interaction Summary Table\n"
-        f"3. Conclusion and Future Directions\n\n"
-        f"Papers:\n{drug_papers_text}"
-    )
-    drug_review = query_openai(system_drugs, user_drugs)
 
     # Repurposing candidates
     print(">> Searching for repurposing candidates …")
@@ -492,53 +471,34 @@ def analyze_and_decide(state: dict) -> dict:
             "round": r.get("round", 1),
         })
 
-    system = (
-        "You are a computational pharmacology researcher analyzing molecular "
-        "docking results for drug repurposing. You must return ONLY valid JSON.\n\n"
-        "Analyze the top docking hits and look for patterns:\n"
-        "- Are drugs from the same therapeutic class clustering as top hits?\n"
-        "  (e.g., multiple statins, multiple SSRIs, multiple kinase inhibitors)\n"
-        "- Do top-scoring compounds share structural features?\n"
-        "- Are there unexplored drug classes that might work?\n\n"
-        "Return a JSON object with:\n"
-        '  "action": one of "expand_3d_similar", "expand_class", or "proceed"\n'
-        '  "rationale": your analysis of the patterns (2-3 sentences)\n'
-        '  "hypothesis": a specific scientific hypothesis (1 sentence)\n'
-        '  "seed_cids": [list of CID numbers] (if action is expand_3d_similar)\n'
-        '  "drug_class": "class name" (if action is expand_class)\n'
-        '  "drug_names": ["drug1", "drug2", ...] (if action is expand_class)\n\n'
-        "Rules:\n"
-        f"- This is round {round_num}. Max rounds: {MAX_EXPANSION_ROUNDS + 1}.\n"
-        f'- If round >= {MAX_EXPANSION_ROUNDS + 1}, you MUST choose "proceed".\n'
-        '- Only choose "expand" if you see a clear pattern worth investigating.\n'
-        '- If expanding, be specific about which CIDs or drug names to test.'
-    )
-
-    user = (
-        f"Disease: {disease}\n"
-        f"Round: {round_num}\n"
-        f"Previous hypotheses: {json.dumps(hypotheses)}\n"
-        f"Previous expansions: {json.dumps(state['expansion_history'])}\n\n"
-        f"Top 30 docking results (sorted by confidence score):\n"
-        f"{json.dumps(results_summary, indent=2)}\n\n"
-        f"Analyze these results and return your decision as JSON."
-    )
-
     print(f"\n{'='*60}")
     print(f"  Stage 4: Reasoning — Round {round_num}")
     print(f"{'='*60}\n")
     print(">> Asking OpenAI to analyze results …")
 
-    raw = query_openai(system, user)
-    decision = _parse_json_response(raw)
-
-    # Ensure required fields
-    if "action" not in decision:
-        decision["action"] = "proceed"
-    if decision["action"] not in ("expand_3d_similar", "expand_class", "proceed"):
-        decision["action"] = "proceed"
-    decision.setdefault("rationale", "")
-    decision.setdefault("hypothesis", "")
+    try:
+        decision = query_prompt_structured(
+            "analysis/reasoning_decision", ReasoningDecision,
+            disease=disease,
+            round=round_num,
+            max_round=MAX_EXPANSION_ROUNDS + 1,
+            hypotheses=json.dumps(hypotheses),
+            expansion_history=json.dumps(state["expansion_history"]),
+            top_results=json.dumps(results_summary, indent=2),
+        ).model_dump()
+    except LLMOutputError as e:
+        # Don't expand on a guess; say why in the rationale so it lands in
+        # expansion_history and the report instead of vanishing.
+        print(f"  WARNING: reasoning reply unusable ({e.kind}): {e}", file=sys.stderr)
+        decision = {
+            "action": "proceed",
+            "rationale": f"(Reasoning step produced no usable result: {e.kind}. "
+                         f"Proceeding to synthesis.)",
+            "hypothesis": "",
+            "seed_cids": None,
+            "drug_class": None,
+            "drug_names": None,
+        }
 
     # Force proceed if we've hit max rounds
     if round_num >= MAX_EXPANSION_ROUNDS + 1:
@@ -573,7 +533,7 @@ def execute_expansion(state: dict, decision: dict) -> dict:
     new_ligands_by_protein = {}  # protein → [ligand dicts]
 
     if action == "expand_3d_similar":
-        seed_cids = decision.get("seed_cids", [])
+        seed_cids = decision.get("seed_cids") or []
         if not seed_cids:
             # Fall back to top-scoring compounds that have CIDs
             for r in sorted(
@@ -609,25 +569,23 @@ def execute_expansion(state: dict, decision: dict) -> dict:
                         new_ligands_by_protein.setdefault(protein, []).append(lig)
 
     elif action == "expand_class":
-        drug_names = decision.get("drug_names", [])
-        drug_class = decision.get("drug_class", "")
+        drug_names = decision.get("drug_names") or []
+        drug_class = decision.get("drug_class") or ""
 
         if not drug_names and drug_class:
             # Ask OpenAI for specific drug names in this class
             print(f"  Asking OpenAI for {drug_class} drugs …")
-            raw = query_openai(
-                "You are a pharmacology expert. Return ONLY a JSON list of "
-                "FDA-approved drug names (generic names). No explanation.",
-                f"List 10 FDA-approved drugs in the class: {drug_class}. "
-                f"Exclude any already in this list: "
-                f"{[r['name'] for r in state['all_docking_results'][:20]]}",
-            )
             try:
-                match = re.search(r"\[.*?\]", raw, re.DOTALL)
-                if match:
-                    drug_names = json.loads(match.group())
-            except (json.JSONDecodeError, AttributeError):
-                pass
+                drug_names = query_prompt_structured(
+                    "analysis/class_expansion", DrugNameList,
+                    drug_class=drug_class,
+                    proteins=", ".join(state["protein_targets"]),
+                    exclude=", ".join(r["name"] for r in state["all_docking_results"][:20]) or "(none)",
+                ).drug_names
+            except LLMOutputError as e:
+                # No names -> no new ligands -> "No new compounds found" below.
+                print(f"  WARNING: drug-name reply unusable ({e.kind}): {e}",
+                      file=sys.stderr)
 
         print(f"  Looking up SMILES for {len(drug_names)} drugs: {drug_names}")
         for name in drug_names[:10]:

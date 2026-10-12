@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { queryOpenAI } from "@/lib/openai"
+import { queryPrompt } from "@/lib/openai"
+import { promptVersions } from "@/lib/prompts"
 import type { DockingResult, DockingTarget } from "@/lib/types"
 
 export const maxDuration = 180
@@ -17,6 +18,45 @@ function classifyCompound(
     return "repurposing"
   }
   return "novel"
+}
+
+const CATEGORY_TABLE_HEADER =
+  "| Rank | Compound | Confidence | Mechanism | FDA Status | Source |\n" +
+  "|------|----------|------------|-----------|------------|--------|\n"
+
+/**
+ * Per-protein ranked tables for one compound category, in the same layout the
+ * Python pipeline (results.py: build_classified_overview) feeds the shared
+ * report/* prompts.
+ */
+function formatCategoryBlock(
+  results: DockingResult[],
+  targets: DockingTarget[]
+): string {
+  const blocks: string[] = []
+  for (const target of targets) {
+    const compounds = results
+      .filter((r) => (r.proteinTarget || "unknown") === target.protein)
+      .sort((a, b) => b.confidenceScore - a.confidenceScore)
+    if (compounds.length === 0) continue
+    const header =
+      `### Protein: ${target.protein}  (PDB: ${target.pdbId || "N/A"})\n` +
+      `- Compounds in this category: ${compounds.length}\n`
+    const rows = compounds
+      .map(
+        (c, i) =>
+          `| ${i + 1} | ${c.name.slice(0, 80)} | ${c.confidenceScore.toFixed(4)} ` +
+          `| ${(c.mechanism || "").slice(0, 60)} | ${(c.fdaStatus || "").slice(0, 40)} ` +
+          `| ${c.source || ""} |\n`
+      )
+      .join("")
+    blocks.push(header + CATEGORY_TABLE_HEADER + rows)
+  }
+  return blocks.length > 0 ? blocks.join("\n") : "(none)"
+}
+
+function toTitleCase(text: string): string {
+  return text.replace(/\b\p{L}/gu, (letter) => letter.toUpperCase())
 }
 
 export async function POST(req: Request) {
@@ -77,52 +117,27 @@ export async function POST(req: Request) {
       overviewText += "\n"
     }
 
-    const classifiedText =
-      `Disease-purposed drugs: ${classified.disease_purposed.length}\n` +
-      `Repurposing candidates: ${classified.repurposing.length}\n` +
-      `Novel/research compounds: ${classified.novel.length}`
+    const disease_purposed = formatCategoryBlock(classified.disease_purposed, targets)
+    const repurposing = formatCategoryBlock(classified.repurposing, targets)
+    const novel = formatCategoryBlock(classified.novel, targets)
 
-    // Generate methodology via OpenAI
-    const methodologyPrompt =
-      `Write a detailed methodology section for a drug repurposing paper about ${disease}. ` +
-      `The study used:\n` +
-      `- GNINA (CNN-scored molecular docking model) on Modal serverless CPU\n` +
-      `- 10 poses per ligand-protein pair\n` +
-      `- Protein structures from RCSB PDB\n` +
-      `- Ligands from PubChem + curated databases\n` +
-      `- OpenAI for literature analysis and reasoning\n\n` +
-      `Overview:\n${overviewText}`
-    const methodology = await queryOpenAI(
-      "You are a scientific writer. Write a detailed methodology section in Markdown.",
-      methodologyPrompt
-    )
-
-    // Generate results via OpenAI
-    const resultsPrompt =
-      `Write a detailed results section for a drug repurposing paper about ${disease}.\n\n` +
-      `Docking results:\n${overviewText}\n\n` +
-      `Classification:\n${classifiedText}\n\n` +
-      `Focus on:\n` +
-      `1. Overview of docking runs\n` +
-      `2. Drug repurposing leaderboard (ALL FDA drugs not approved for this disease)\n` +
-      `3. Novel/research compounds\n` +
-      `4. Cross-target comparison\n` +
-      `5. Score distribution analysis`
-    const results = await queryOpenAI(
-      "You are a scientific writer. Write a detailed results section in Markdown with tables.",
-      resultsPrompt
-    )
-
-    // Generate conclusion via OpenAI
-    const conclusionPrompt =
-      `Write a conclusion for a drug repurposing paper about ${disease}.\n\n` +
-      `Results:\n${overviewText}\n\n` +
-      `Classification:\n${classifiedText}\n\n` +
-      `Cover: key findings, top repurposing candidates, clinical implications, limitations, future directions.`
-    const conclusion = await queryOpenAI(
-      "You are a scientific writer. Write a conclusion section in Markdown.",
-      conclusionPrompt
-    )
+    const methodology = await queryPrompt("report/methodology", {
+      disease,
+      overview: overviewText,
+    })
+    const results = await queryPrompt("report/results", {
+      disease,
+      disease_title: toTitleCase(disease),
+      overview: overviewText,
+      disease_purposed,
+      repurposing,
+      novel,
+    })
+    const conclusion = await queryPrompt("report/conclusion", {
+      disease,
+      overview: overviewText,
+      repurposing,
+    })
 
     const resultsMd =
       `# Results: Drug Repurposing Analysis for ${disease}\n\n` +
@@ -130,7 +145,14 @@ export async function POST(req: Request) {
       `## Results\n\n${results}\n\n` +
       `## Conclusion\n\n${conclusion}\n`
 
-    return NextResponse.json({ resultsMd })
+    return NextResponse.json({
+      resultsMd,
+      promptVersions: promptVersions([
+        "report/methodology",
+        "report/results",
+        "report/conclusion",
+      ]),
+    })
   } catch (error) {
     console.error("Report API error:", error)
     return NextResponse.json(

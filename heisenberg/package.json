@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "gen:prompts": "node scripts/gen-prompts.mjs",
+    "predev": "node scripts/gen-prompts.mjs",
     "dev": "next dev --turbo",
+    "prebuild": "node scripts/gen-prompts.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "3dmol": "^2.5.4",
@@ -62,7 +66,8 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "^3.24.1"
+    "yaml": "^2.9.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
@@ -71,6 +76,7 @@
     "@types/react-dom": "19.2.3",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
     "typescript": "5.7.3"
   },
   "pnpm": {

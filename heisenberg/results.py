@@ -14,55 +14,7 @@ import re
 import sys
 from datetime import datetime
 
-import requests
-from dotenv import load_dotenv
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-load_dotenv()
-
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.6-terra")
-
-
-# ---------------------------------------------------------------------------
-# OpenAI helpers
-# ---------------------------------------------------------------------------
-
-def query_openai(system_prompt: str, user_prompt: str) -> str:
-    """Send a chat-completion request to the OpenAI API and return the
-    assistant's reply text."""
-    if not OPENAI_API_KEY:
-        print("ERROR: OPENAI_API_KEY environment variable is not set.",
-              file=sys.stderr)
-        sys.exit(1)
-
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": OPENAI_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        # No custom temperature — some models (e.g. gpt-5.6-terra) only
-        # support the default (1) and reject any other value.
-        "max_completion_tokens": 8000,
-    }
-
-    print("[OpenAI] Sending request …")
-    resp = requests.post(OPENAI_URL, json=payload, headers=headers, timeout=120)
-    resp.raise_for_status()
-    data = resp.json()
-    reply = data["choices"][0]["message"]["content"]
-    print(f"[OpenAI] Received {len(reply)} chars.")
-    return reply
-
+from llm import query_prompt
 
 def _strip_leading_header(text: str) -> str:
     """Remove a leading Markdown header (e.g. '## Methodology\\n') that
@@ -229,43 +181,7 @@ def build_classified_overview(
 
 def generate_methodology(disease: str, overview: str) -> str:
     """Ask OpenAI to write the Methodology section."""
-    system = (
-        "You are an expert computational biologist writing the methodology "
-        "section of a peer-reviewed research paper. Write in formal academic "
-        "prose using Markdown formatting. Include specific technical details. "
-        "Use inline citations like [1], [2] when citing GNINA or Modal. "
-        "Do NOT invent results — describe only the experimental setup."
-    )
-    user = (
-        f"Write a **Methodology** section for a research paper studying "
-        f"potential drug candidates for **{disease}** via molecular docking.\n\n"
-        f"Use the following factual details:\n\n"
-        f"1. **Molecular docking engine**: GNINA — a CNN-scored molecular "
-        f"docking tool built on AutoDock Vina's search algorithm, which "
-        f"rescores generated poses with an ensemble of trained convolutional "
-        f"neural networks. GNINA generates multiple binding poses per "
-        f"ligand–protein pair and ranks them by a learned CNN pose score "
-        f"(0 – 1, higher = better predicted binding).\n\n"
-        f"2. **Compute infrastructure**: All docking simulations were run on "
-        f"Modal serverless CPU workers. Each job was submitted to a dedicated "
-        f"serverless function, enabling parallel CPU inference without "
-        f"managing local hardware.\n\n"
-        f"3. **Docking protocol**: For every ligand–protein pair, 10 binding "
-        f"poses were generated. The pose with the highest confidence score "
-        f"was retained as the representative result for ranking.\n\n"
-        f"4. **Protein structures**: Target proteins were obtained from the "
-        f"RCSB Protein Data Bank (PDB) in standard .pdb format.\n\n"
-        f"5. **Ligand sources**: Candidate compounds were retrieved from "
-        f"PubChem and curated drug databases, including both FDA-approved "
-        f"drugs and bioactive research compounds identified through target-"
-        f"based searches.\n\n"
-        f"6. **Run summary**:\n{overview}\n\n"
-        f"Structure the section with clear sub-headings (e.g., "
-        f"'Molecular Docking Engine', 'Compute Infrastructure', "
-        f"'Docking Protocol', 'Protein Target Selection', "
-        f"'Ligand Library Construction')."
-    )
-    return query_openai(system, user)
+    return query_prompt("report/methodology", disease=disease, overview=overview)
 
 
 def generate_results(
@@ -275,52 +191,15 @@ def generate_results(
 ) -> str:
     """Ask OpenAI to write the Results section, split into
     disease-purposed drugs, a repurposing leaderboard, and novel compounds."""
-    system = (
-        "You are an expert computational biologist writing the results "
-        "section of a peer-reviewed drug-repurposing research paper. "
-        "Write in formal academic prose using Markdown formatting. "
-        "Present the data objectively — interpret findings only where "
-        "directly supported by the numbers. Include Markdown tables."
+    return query_prompt(
+        "report/results",
+        disease=disease,
+        disease_title=disease.title(),
+        overview=overview,
+        disease_purposed=classified["disease_purposed"],
+        repurposing=classified["repurposing"],
+        novel=classified["novel"],
     )
-    user = (
-        f"Write a **Results** section for a research paper whose goal is "
-        f"to identify **drug repurposing candidates** for "
-        f"**{disease}** via molecular docking.\n\n"
-        f"## Full docking data\n\n{overview}\n\n"
-        f"The compounds have been classified into three categories:\n\n"
-        f"### A. Drugs Currently Approved for {disease.title()}\n\n"
-        f"{classified['disease_purposed']}\n\n"
-        f"### B. Repurposing Candidates — FDA-Approved for Other Indications\n\n"
-        f"{classified['repurposing']}\n\n"
-        f"### C. Novel / Research Compounds (Not Yet FDA-Approved)\n\n"
-        f"{classified['novel']}\n\n"
-        f"The Results section MUST include:\n\n"
-        f"1. **Overview of Docking Runs** — number of targets, ligands, "
-        f"and total compute time.\n"
-        f"2. **Drugs Currently Purposed for {disease.title()}** — "
-        f"present a ranked table of the disease-purposed drugs and their "
-        f"confidence scores per target. Comment on their performance as a "
-        f"baseline.  If none exist, state that explicitly.\n"
-        f"3. **Drug Repurposing Leaderboard** — THIS IS THE MOST IMPORTANT "
-        f"SECTION.  Present a single **combined leaderboard table** of ALL "
-        f"FDA-approved drugs that are approved for OTHER indications "
-        f"(not {disease}), ranked by their best GNINA confidence "
-        f"score across all targets.  Columns: Rank, Drug Name, Best "
-        f"Confidence Score, Target Protein, Original Approved Indication, "
-        f"Proposed Mechanism.  Below the table, discuss the top 5 "
-        f"candidates in detail — why their scores are noteworthy, what "
-        f"their original indication is, and what evidence supports "
-        f"repurposing potential.\n"
-        f"4. **Novel / Research Compounds** — briefly present top-scoring "
-        f"non-FDA compounds for completeness.\n"
-        f"5. **Cross-Target Comparison** — highlight any compound that "
-        f"scores well against multiple targets.\n"
-        f"6. **Score Distribution Analysis** — compare score ranges "
-        f"between disease-purposed drugs, repurposing candidates, and "
-        f"novel compounds.\n\n"
-        f"Use specific numbers from the data. Do not fabricate results."
-    )
-    return query_openai(system, user)
 
 
 def generate_conclusion(
@@ -330,41 +209,12 @@ def generate_conclusion(
 ) -> str:
     """Ask OpenAI to write the Conclusion section, emphasising the
     drug-repurposing findings."""
-    system = (
-        "You are an expert computational biologist writing the conclusion "
-        "of a peer-reviewed drug-repurposing research paper. Write in "
-        "formal academic prose using Markdown formatting. Ground all "
-        "statements in the data provided; clearly distinguish "
-        "computational predictions from experimental evidence."
+    return query_prompt(
+        "report/conclusion",
+        disease=disease,
+        overview=overview,
+        repurposing=classified["repurposing"],
     )
-    user = (
-        f"Write a **Conclusion** section for a research paper whose "
-        f"primary goal was to identify **drug repurposing candidates** "
-        f"for **{disease}** via molecular docking.\n\n"
-        f"Data summary:\n\n{overview}\n\n"
-        f"Repurposing leaderboard data:\n\n{classified['repurposing']}\n\n"
-        f"The Conclusion MUST cover:\n\n"
-        f"1. **Summary of Key Findings** — which repurposed drugs showed "
-        f"the strongest predicted binding and for which target(s). "
-        f"Highlight how they compare to drugs already approved for "
-        f"{disease} (if any were tested).\n"
-        f"2. **Top Repurposing Candidates** — name the most promising "
-        f"FDA-approved drugs from other therapeutic areas, their original "
-        f"indications, and why their docking scores suggest they merit "
-        f"further investigation for {disease}.\n"
-        f"3. **Clinical Implications** — what these docking results "
-        f"suggest for accelerated clinical trials, given that repurposed "
-        f"drugs already have established safety profiles. Note these are "
-        f"computational predictions requiring experimental validation.\n"
-        f"4. **Limitations** — limitations of GNINA confidence scores "
-        f"as proxies for actual binding affinity, absence of molecular "
-        f"dynamics / free-energy perturbation follow-up, limited target "
-        f"conformational sampling, etc.\n"
-        f"5. **Future Directions** — recommended next steps: MD "
-        f"simulations, in vitro binding assays, ADMET profiling, and "
-        f"preclinical testing for the top repurposing candidates."
-    )
-    return query_openai(system, user)
 
 
 # ---------------------------------------------------------------------------

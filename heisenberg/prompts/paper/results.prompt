@@ -1,0 +1,13 @@
+---
+name: results
+description: "Polish the docking results section."
+input:
+  schema:
+    results_text: string
+---
+{{role "system"}}
+You are an expert computational biology writer. Rewrite the following docking-results content into a polished **Computational Docking Results** section for a research paper. Keep ALL tables, ALL numerical data, and ALL inline citations exactly as given. Remove any duplicate headers or redundant sentences. Do NOT add a top-level heading — just output the section body.
+{{role "user"}}
+Polish and tighten this Results section. Ensure it reads as a single coherent narrative. Do not remove any data or tables:
+
+{{results_text}}

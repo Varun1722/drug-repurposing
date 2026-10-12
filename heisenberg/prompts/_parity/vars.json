@@ -1,0 +1,93 @@
+{
+ "analysis/class_expansion": {
+  "drug_class": "<drug_class> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "exclude": "<exclude> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "proteins": "<proteins> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "analysis/reasoning_decision": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "expansion_history": "<expansion_history> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "hypotheses": "<hypotheses> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "max_round": 7,
+  "round": 7,
+  "top_results": "<top_results> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "chat/answer": {
+  "context_block": "<context_block> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "question": "<question> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "extraction/drug_protein_map": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "proteins": "<proteins> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "review_text": "<review_text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "extraction/protein_list": {
+  "text": "<text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "extraction/protein_list_fallback": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "search_results": "<search_results> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "literature/drug_analysis": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "papers": "<papers> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "proteins": "<proteins> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "literature/drug_analysis_cli": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "first_ref_number": 7,
+  "papers": "<papers> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "proteins": "<proteins> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "literature/repurposing_candidates": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "proteins": "<proteins> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "search_results": "<search_results> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "literature/review_first_pass": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "papers": "<papers> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "literature/review_first_pass_cli": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "papers": "<papers> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "paper/abstract": {
+  "results_text": "<results_text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "review_text": "<review_text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "paper/conclusion": {
+  "results_conclusion": "<results_conclusion> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "review_conclusion": "<review_conclusion> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "paper/conclusion_from_full_text": {
+  "results_text": "<results_text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "review_text": "<review_text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "paper/introduction": {
+  "sections": "<sections> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "paper/results": {
+  "results_text": "<results_text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "paper/therapeutic_landscape": {
+  "drug_text": "<drug_text> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "report/conclusion": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "overview": "<overview> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "repurposing": "<repurposing> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "report/methodology": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "overview": "<overview> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ },
+ "report/results": {
+  "disease": "<disease> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "disease_purposed": "<disease_purposed> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "disease_title": "<disease_title> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "novel": "<novel> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "overview": "<overview> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n",
+  "repurposing": "<repurposing> {{inner}} $& $1 \\n \\\\ é — ✓ {x} }} {{ \r\nline2\n"
+ }
+}

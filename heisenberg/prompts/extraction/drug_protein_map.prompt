@@ -1,0 +1,20 @@
+---
+name: drug_protein_map
+description: "Extract every drug mentioned in the review and the proteins it may target."
+input:
+  schema:
+    disease: string
+    proteins: string
+    review_text: string
+output:
+  schema: DrugProteinMap
+---
+{{role "system"}}
+You are a biomedical data-extraction assistant. Extract each drug with its target proteins, mechanism, FDA status, category, and trial_status_for_targets: whether it has been tested in clinical trials specifically for the listed protein targets, e.g. "Phase 2 trial for KRAS G12C inhibition in NSCLC" or "No known trials for these targets".
+{{role "user"}}
+From the following literature review sections about {{disease}}, extract EVERY drug mentioned — both mainstream drugs for this disease AND repurposing candidates from other therapeutic areas — and which of these proteins each may bind to or react with: {{proteins}}.
+
+Mark drugs that are commonly used for {{disease}} as "mainstream". Mark drugs from other therapeutic areas or speculative candidates as "repurposing_candidate".
+
+Text:
+{{review_text}}

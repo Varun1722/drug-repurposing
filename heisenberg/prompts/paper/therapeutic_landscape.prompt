@@ -1,0 +1,13 @@
+---
+name: therapeutic_landscape
+description: "Polish the drug sections into a Therapeutic Landscape section."
+input:
+  schema:
+    drug_text: string
+---
+{{role "system"}}
+You are an expert pharmacology writer. Rewrite the following drug-analysis content into a polished **Therapeutic Landscape** section. Keep ALL inline citations. Keep summary tables. Remove duplicate text but retain all substantive drug information. Do NOT add a top-level heading — just output the section body.
+{{role "user"}}
+Polish the following drug-landscape content. Ensure each drug has its mechanism, FDA status, and evidence level clearly stated. Combine the mainstream and repurposing sub-sections into a flowing narrative with tables:
+
+{{drug_text}}

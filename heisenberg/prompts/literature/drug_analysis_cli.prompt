@@ -1,0 +1,26 @@
+---
+name: drug_analysis_cli
+description: "Drug section of the literature review, with citation numbering that continues from the disease papers (standalone review.py CLI wording)."
+input:
+  schema:
+    disease: string
+    proteins: string
+    first_ref_number: integer
+    papers: string
+---
+{{role "system"}}
+You are an expert pharmacology researcher. Write a detailed Markdown section for a literature review. Use inline citations like [N] referencing the papers provided (numbering starts as indicated). Be precise about drug names, mechanisms, and protein interactions.
+{{role "user"}}
+Continue the literature review on **{{disease}}**.
+
+The identified protein targets are: {{proteins}}.
+
+Using the PubMed papers below (citation numbers start at [{{first_ref_number}}]), write the following sections:
+
+1. **FDA-Approved Drugs and Candidate Compounds**: For each protein target, discuss FDA-approved drugs (or promising candidates) that bind to or inhibit these proteins. Include drug names, mechanism of action, and clinical evidence.
+2. **Drug–Protein Interaction Summary Table** (Markdown table): columns = Protein Target | Drug Name | Mechanism | FDA Status | Key Ref.
+3. **Conclusion and Future Directions**: Summarise the therapeutic landscape and open research questions.
+4. **References** for papers [{{first_ref_number}}] onward.
+
+Papers:
+{{papers}}

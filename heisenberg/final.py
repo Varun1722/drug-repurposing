@@ -17,55 +17,7 @@ import re
 import sys
 from datetime import datetime
 
-import requests
-from dotenv import load_dotenv
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-load_dotenv()
-
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.6-terra")
-
-
-# ---------------------------------------------------------------------------
-# OpenAI helpers
-# ---------------------------------------------------------------------------
-
-def query_openai(system_prompt: str, user_prompt: str) -> str:
-    """Send a chat-completion request to the OpenAI API and return the
-    assistant's reply text."""
-    if not OPENAI_API_KEY:
-        print("ERROR: OPENAI_API_KEY environment variable is not set.",
-              file=sys.stderr)
-        sys.exit(1)
-
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": OPENAI_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        # No custom temperature — some models (e.g. gpt-5.6-terra) only
-        # support the default (1) and reject any other value.
-        "max_completion_tokens": 8000,
-    }
-
-    print("[OpenAI] Sending request …")
-    resp = requests.post(OPENAI_URL, json=payload, headers=headers, timeout=180)
-    resp.raise_for_status()
-    data = resp.json()
-    reply = data["choices"][0]["message"]["content"]
-    print(f"[OpenAI] Received {len(reply)} chars.")
-    return reply
-
+from llm import query_prompt
 
 # ---------------------------------------------------------------------------
 # Markdown helpers
@@ -145,30 +97,11 @@ def _deduplicate_references(review_refs: str, results_refs: str) -> str:
 
 def generate_abstract(review_text: str, results_text: str) -> str:
     """Generate a concise, publication-quality abstract."""
-    system = (
-        "You are an expert biomedical research writer composing the abstract "
-        "of a peer-reviewed research paper. Write a single cohesive "
-        "paragraph of 200-300 words in formal academic prose. Do NOT use "
-        "Markdown headers — output only the abstract paragraph text. "
-        "Do NOT include the word 'Abstract' as a heading."
+    return query_prompt(
+        "paper/abstract",
+        review_text=review_text[:6000],
+        results_text=results_text[:6000],
     )
-    user = (
-        "Write an abstract for a research paper that combines a literature "
-        "review and computational drug-repurposing study. The abstract must:\n\n"
-        "1. State the clinical problem (disease, unmet need).\n"
-        "2. Briefly describe the approach (literature review of molecular "
-        "targets + GNINA molecular docking on Modal serverless CPU compute).\n"
-        "3. Summarise key protein targets identified.\n"
-        "4. Highlight the top drug repurposing candidates and their "
-        "confidence scores.\n"
-        "5. State the main conclusion and the need for experimental "
-        "validation.\n\n"
-        "--- LITERATURE REVIEW ---\n"
-        f"{review_text[:6000]}\n\n"
-        "--- DOCKING RESULTS ---\n"
-        f"{results_text[:6000]}\n"
-    )
-    return query_openai(system, user)
 
 
 def merge_introduction_and_background(
@@ -177,83 +110,29 @@ def merge_introduction_and_background(
     """Merge the introduction, molecular landscape, and protein-target
     sections from the review into a single polished Introduction & Background
     section. Preserve inline citation numbers."""
-    system = (
-        "You are an expert biomedical research writer. Rewrite the following "
-        "content into a single, polished **Introduction and Background** "
-        "section for a research paper. Use formal academic prose in Markdown. "
-        "Preserve ALL inline citations (e.g. [1], [2]) exactly as given — do "
-        "NOT renumber them. Remove redundancy between sources but keep all "
-        "substantive information. Include sub-headings where appropriate. "
-        "Do NOT add a top-level '## Introduction' heading — just output the "
-        "section body."
-    )
-    user = (
-        "Combine and polish the following sub-sections into one cohesive "
-        "Introduction and Background:\n\n"
-        f"{review_text}\n"
-    )
-    return query_openai(system, user)
+    return query_prompt("paper/introduction", sections=review_text)
 
 
 def merge_drug_landscape(review_drug_text: str) -> str:
     """Polish the FDA-approved drugs and repurposing-candidates sections from
     the review into a single Therapeutic Landscape section."""
-    system = (
-        "You are an expert pharmacology writer. Rewrite the following "
-        "drug-analysis content into a polished **Therapeutic Landscape** "
-        "section. Keep ALL inline citations. Keep summary tables. "
-        "Remove duplicate text but retain all substantive drug information. "
-        "Do NOT add a top-level heading — just output the section body."
-    )
-    user = (
-        "Polish the following drug-landscape content. Ensure each drug has "
-        "its mechanism, FDA status, and evidence level clearly stated. "
-        "Combine the mainstream and repurposing sub-sections into a "
-        "flowing narrative with tables:\n\n"
-        f"{review_drug_text}\n"
-    )
-    return query_openai(system, user)
+    return query_prompt("paper/therapeutic_landscape", drug_text=review_drug_text)
 
 
 def merge_results(results_text: str) -> str:
     """Polish the docking results section into final-paper quality."""
-    system = (
-        "You are an expert computational biology writer. Rewrite the "
-        "following docking-results content into a polished **Computational "
-        "Docking Results** section for a research paper. Keep ALL tables, "
-        "ALL numerical data, and ALL inline citations exactly as given. "
-        "Remove any duplicate headers or redundant sentences. "
-        "Do NOT add a top-level heading — just output the section body."
-    )
-    user = (
-        "Polish and tighten this Results section. Ensure it reads as a "
-        "single coherent narrative. Do not remove any data or tables:\n\n"
-        f"{results_text}\n"
-    )
-    return query_openai(system, user)
+    return query_prompt("paper/results", results_text=results_text)
 
 
 def merge_conclusions(
     review_conclusion: str, results_conclusion: str
 ) -> str:
     """Merge the two conclusion sections into one unified conclusion."""
-    system = (
-        "You are an expert biomedical research writer composing the "
-        "conclusion of a peer-reviewed research paper. Merge the following "
-        "two conclusion texts into ONE cohesive Conclusion section. "
-        "Remove redundancy. Preserve ALL inline citations. Cover: "
-        "(1) key findings from both the literature review and docking study, "
-        "(2) top repurposing candidates, (3) clinical implications, "
-        "(4) limitations, (5) future directions. Use formal academic prose "
-        "in Markdown. Do NOT add a top-level heading."
+    return query_prompt(
+        "paper/conclusion",
+        review_conclusion=review_conclusion,
+        results_conclusion=results_conclusion,
     )
-    user = (
-        "--- LITERATURE REVIEW CONCLUSION ---\n"
-        f"{review_conclusion}\n\n"
-        "--- DOCKING RESULTS CONCLUSION ---\n"
-        f"{results_conclusion}\n"
-    )
-    return query_openai(system, user)
 
 
 # ---------------------------------------------------------------------------
