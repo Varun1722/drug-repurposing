@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { queryOpenAI, parseJsonResponse } from "@/lib/openai"
+import { queryPromptStructured, LLMOutputError } from "@/lib/openai"
+import { ReasoningDecisionSchema } from "@/lib/llm-schemas"
 import type { DockingResult, ReasoningDecision } from "@/lib/types"
 
 export const maxDuration = 60
@@ -43,63 +44,51 @@ export async function POST(req: Request) {
         round: r.round || 1,
       }))
 
-    const system =
-      "You are a computational pharmacology researcher analyzing molecular " +
-      "docking results for drug repurposing. You must return ONLY valid JSON.\n\n" +
-      "Analyze the top docking hits and look for patterns:\n" +
-      "- Are drugs from the same therapeutic class clustering as top hits?\n" +
-      "  (e.g., multiple statins, multiple SSRIs, multiple kinase inhibitors)\n" +
-      "- Do top-scoring compounds share structural features?\n" +
-      "- Are there unexplored drug classes that might work?\n\n" +
-      "Return a JSON object with:\n" +
-      '  "action": one of "expand_3d_similar", "expand_class", or "proceed"\n' +
-      '  "rationale": your analysis of the patterns (2-3 sentences)\n' +
-      '  "hypothesis": a specific scientific hypothesis (1 sentence)\n' +
-      '  "seed_cids": [list of CID numbers] (if action is expand_3d_similar)\n' +
-      '  "drug_class": "class name" (if action is expand_class)\n' +
-      '  "drug_names": ["drug1", "drug2", ...] (if action is expand_class)\n\n' +
-      "Rules:\n" +
-      `- This is round ${round}. Max rounds: ${MAX_EXPANSION_ROUNDS + 1}.\n` +
-      `- If round >= ${MAX_EXPANSION_ROUNDS + 1}, you MUST choose "proceed".\n` +
-      '- Only choose "expand" if you see a clear pattern worth investigating.\n' +
-      "- If expanding, be specific about which CIDs or drug names to test."
-
-    const user =
-      `Disease: ${disease}\n` +
-      `Round: ${round}\n` +
-      `Previous hypotheses: ${JSON.stringify(hypotheses)}\n` +
-      `Previous expansions: ${JSON.stringify(expansionHistory)}\n\n` +
-      `Top 30 docking results (sorted by confidence score):\n` +
-      `${JSON.stringify(topResults, null, 2)}\n\n` +
-      `Analyze these results and return your decision as JSON.`
-
-    const raw = await queryOpenAI(system, user)
-    const parsed = parseJsonResponse(raw) as Record<string, unknown>
-
-    const decision: ReasoningDecision = {
-      action: "proceed",
-      rationale: (parsed.rationale as string) || "",
-      hypothesis: (parsed.hypothesis as string) || "",
-    }
-
-    // Validate action
-    const action = parsed.action as string
-    if (["expand_3d_similar", "expand_class", "proceed"].includes(action)) {
-      decision.action = action as ReasoningDecision["action"]
+    let decision: ReasoningDecision
+    try {
+      const parsed = await queryPromptStructured(
+        "analysis/reasoning_decision",
+        {
+          disease,
+          round,
+          max_round: MAX_EXPANSION_ROUNDS + 1,
+          hypotheses: JSON.stringify(hypotheses),
+          expansion_history: JSON.stringify(expansionHistory),
+          top_results: JSON.stringify(topResults, null, 2),
+        },
+        ReasoningDecisionSchema
+      )
+      decision = {
+        action: parsed.action,
+        rationale: parsed.rationale,
+        hypothesis: parsed.hypothesis,
+      }
+      if (parsed.action === "expand_3d_similar") {
+        decision.seedCids = parsed.seed_cids ?? []
+      }
+      if (parsed.action === "expand_class") {
+        decision.drugClass = parsed.drug_class ?? ""
+        decision.drugNames = parsed.drug_names ?? []
+      }
+    } catch (error) {
+      if (!(error instanceof LLMOutputError)) throw error
+      // The reply was unusable (refusal, truncation, ...). Don't expand on a
+      // guess, and say why in the rationale so it shows up in the history.
+      console.error("Analyze: unusable LLM output:", error.kind, error.message)
+      decision = {
+        action: "proceed",
+        rationale: `(Reasoning step produced no usable result: ${error.kind}. Proceeding to synthesis.)`,
+        hypothesis: "",
+      }
     }
 
     // Force proceed if max rounds reached
     if (round >= MAX_EXPANSION_ROUNDS + 1) {
       decision.action = "proceed"
+      delete decision.seedCids
+      delete decision.drugClass
+      delete decision.drugNames
       decision.rationale += " (Max rounds reached, proceeding to synthesis.)"
-    }
-
-    if (decision.action === "expand_3d_similar") {
-      decision.seedCids = (parsed.seed_cids as number[]) || []
-    }
-    if (decision.action === "expand_class") {
-      decision.drugClass = (parsed.drug_class as string) || ""
-      decision.drugNames = (parsed.drug_names as string[]) || []
     }
 
     return NextResponse.json(decision)

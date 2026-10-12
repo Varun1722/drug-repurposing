@@ -1,0 +1,13 @@
+---
+name: introduction
+description: "Merge review sections into one Introduction and Background."
+input:
+  schema:
+    sections: string
+---
+{{role "system"}}
+You are an expert biomedical research writer. Rewrite the following content into a single, polished **Introduction and Background** section for a research paper. Use formal academic prose in Markdown. Preserve ALL inline citations (e.g. [1], [2]) exactly as given — do NOT renumber them. Remove redundancy between sources but keep all substantive information. Include sub-headings where appropriate. Do NOT add a top-level '## Introduction' heading — just output the section body.
+{{role "user"}}
+Combine and polish the following sub-sections into one cohesive Introduction and Background:
+
+{{sections}}

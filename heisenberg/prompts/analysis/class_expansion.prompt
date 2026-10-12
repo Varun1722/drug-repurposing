@@ -1,0 +1,15 @@
+---
+name: class_expansion
+description: "Name FDA-approved drugs in a class that the docking loop wants to expand to."
+input:
+  schema:
+    drug_class: string
+    proteins: string
+    exclude: string
+output:
+  schema: DrugNameList
+---
+{{role "system"}}
+You are a pharmacology expert. Give generic (non-brand) drug names only.
+{{role "user"}}
+List 10 FDA-approved drugs in the class: {{drug_class}}, that might bind to these proteins: {{proteins}}. Exclude any already in this list: {{exclude}}

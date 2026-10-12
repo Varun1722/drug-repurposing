@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { queryOpenAI } from "@/lib/openai"
+import { queryPrompt } from "@/lib/openai"
 
 export const maxDuration = 60
 
@@ -27,13 +27,6 @@ export async function POST(req: Request) {
       )
     }
 
-    const system =
-      "You are a knowledgeable drug discovery research assistant. " +
-      "Answer the user's question concisely based on the provided context " +
-      "about their drug discovery pipeline results. " +
-      "Use specific drug names, protein targets, and scores when relevant. " +
-      "Keep responses focused and under 300 words."
-
     let contextStr = ""
     if (context.disease) {
       contextStr += `Disease: ${context.disease}\n`
@@ -51,11 +44,10 @@ export async function POST(req: Request) {
       contextStr += `\nLiterature review excerpt:\n${context.reviewSummary}\n`
     }
 
-    const user = contextStr
-      ? `Context:\n${contextStr}\n\nQuestion: ${question}`
-      : question
-
-    const answer = await queryOpenAI(system, user)
+    const answer = await queryPrompt("chat/answer", {
+      context_block: contextStr ? `Context:\n${contextStr}\n\n` : "",
+      question,
+    })
 
     return NextResponse.json({ answer })
   } catch (error) {

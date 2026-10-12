@@ -10,11 +10,9 @@ grounding.
 """
 
 import argparse
-import ast
 import json
 import os
 from dotenv import load_dotenv
-import re
 import sys
 import time
 import urllib.parse
@@ -25,15 +23,14 @@ import defusedxml.ElementTree as ET
 
 import requests
 
+from llm import LLMOutputError, query_prompt, query_prompt_structured
+from llm_schemas import DrugProteinMap, ProteinList
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
 load_dotenv()
-
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.6-terra")
 
 EXA_API_KEY = os.environ.get("EXA_API_KEY", "")
 EXA_SEARCH_URL = "https://api.exa.ai/search"
@@ -187,40 +184,8 @@ def format_papers_for_prompt(papers: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# OpenAI + Exa helpers
+# Exa helpers
 # ---------------------------------------------------------------------------
-
-def query_openai(system_prompt: str, user_prompt: str) -> str:
-    """Send a chat-completion request to the OpenAI API and return the
-    assistant's reply text."""
-    if not OPENAI_API_KEY:
-        print("ERROR: OPENAI_API_KEY environment variable is not set.",
-              file=sys.stderr)
-        sys.exit(1)
-
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": OPENAI_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        # No custom temperature — some models (e.g. gpt-5.6-terra) only
-        # support the default (1) and reject any other value.
-        "max_completion_tokens": 8000,
-    }
-
-    print("[OpenAI] Sending request …")
-    resp = requests.post(OPENAI_URL, json=payload, headers=headers, timeout=120)
-    resp.raise_for_status()
-    data = resp.json()
-    reply = data["choices"][0]["message"]["content"]
-    print(f"[OpenAI] Received {len(reply)} chars.")
-    return reply
-
 
 def web_search_exa(query: str, num_results: int = 12) -> list[dict]:
     """Search the live web via Exa and return a list of
@@ -311,24 +276,21 @@ def build_repurposing_query(proteins: list[str]) -> str:
 def extract_proteins_from_text(text: str) -> list[str]:
     """Ask OpenAI to extract a concise list of protein targets from the
     first-pass review."""
-    system = (
-        "You are a biomedical research assistant. "
-        "Extract a concise list of protein targets from the following text. "
-        "Return ONLY a Python-style list of short protein names/symbols, "
-        "e.g. ['EGFR', 'HER2', 'BRAF']. No explanation."
-    )
-    raw = query_openai(system, text)
-    # Parse the list from the response
-    match = re.search(r"\[.*?\]", raw, re.DOTALL)
-    if match:
-        try:
-            proteins = ast.literal_eval(match.group())
-            if isinstance(proteins, list):
-                return [str(p) for p in proteins]
-        except Exception:
-            pass
-    # Fallback: split comma-separated tokens
-    return [tok.strip().strip("'\"") for tok in raw.split(",") if tok.strip()]
+    try:
+        result = query_prompt_structured(
+            "extraction/protein_list", ProteinList, text=text
+        )
+    except LLMOutputError as e:
+        # Empty list -> the caller retries via extract_proteins_fallback.
+        print(f"[OpenAI] Protein extraction unusable ({e.kind}): {e}",
+              file=sys.stderr)
+        return []
+    return _clean_names(result.proteins)
+
+
+def _clean_names(names: list[str]) -> list[str]:
+    """Trim, drop blanks, and de-duplicate while keeping order."""
+    return list(dict.fromkeys(n.strip() for n in names if n.strip()))
 
 
 def extract_proteins_fallback(disease: str) -> list[str]:
@@ -345,26 +307,16 @@ def extract_proteins_fallback(disease: str) -> list[str]:
         return []
     search_results_text = format_search_results_for_prompt(search_results)
 
-    system = (
-        "You are a biomedical research assistant. Based ONLY on the search "
-        "results provided, return ONLY a Python-style list of 3-5 well-known "
-        "protein target names/symbols implicated in the disease given. "
-        "No explanation."
-    )
-    user = (
-        f"Disease: {disease}\n\n"
-        f"Search results:\n{search_results_text}"
-    )
-    raw = query_openai(system, user)
-    match = re.search(r"\[.*?\]", raw, re.DOTALL)
-    if match:
-        try:
-            proteins = ast.literal_eval(match.group())
-            if isinstance(proteins, list) and proteins:
-                return [str(p) for p in proteins]
-        except Exception:
-            pass
-    return []
+    try:
+        result = query_prompt_structured(
+            "extraction/protein_list_fallback", ProteinList,
+            disease=disease, search_results=search_results_text,
+        )
+    except LLMOutputError as e:
+        print(f"[OpenAI] Protein fallback unusable ({e.kind}): {e}",
+              file=sys.stderr)
+        return []
+    return _clean_names(result.proteins)
 
 
 def main():
@@ -405,25 +357,10 @@ def main():
 
     # ----- Step 2: Generate first-pass review (disease + proteins) -----
     print("\n>> Step 2: Generating literature review via OpenAI …")
-    system_review = (
-        "You are an expert biomedical researcher. Write a detailed, scholarly "
-        "literature review in Markdown format. Use inline citations like "
-        "[1], [2], etc., referencing the papers provided. Include proper "
-        "section headings."
+    first_review = query_prompt(
+        "literature/review_first_pass_cli",
+        disease=disease, papers=disease_papers_text,
     )
-    user_review = (
-        f"Using the following PubMed papers as primary references, write a "
-        f"comprehensive literature review about **{disease}**.\n\n"
-        f"The review MUST include:\n"
-        f"1. An introduction to {disease} (epidemiology, significance).\n"
-        f"2. Molecular and genetic landscape of {disease}.\n"
-        f"3. **Key protein targets** that should be targeted for treatment "
-        f"(explain the biological rationale for each).\n"
-        f"4. Current therapeutic strategies and clinical relevance.\n"
-        f"5. A references section listing each paper.\n\n"
-        f"Papers:\n{disease_papers_text}"
-    )
-    first_review = query_openai(system_review, user_review)
 
     # ----- Step 3: Extract protein targets -----
     print("\n>> Step 3: Extracting protein targets …")
@@ -476,29 +413,13 @@ def main():
                 f"[{i}]", f"[{i + offset}]", 1
             )
 
-    system_drugs = (
-        "You are an expert pharmacology researcher. Write a detailed Markdown "
-        "section for a literature review. Use inline citations like [N] "
-        "referencing the papers provided (numbering starts as indicated). "
-        "Be precise about drug names, mechanisms, and protein interactions."
+    drug_review = query_prompt(
+        "literature/drug_analysis_cli",
+        disease=disease,
+        proteins=", ".join(proteins),
+        first_ref_number=offset + 1,
+        papers=re_numbered_drug_text,
     )
-    user_drugs = (
-        f"Continue the literature review on **{disease}**.\n\n"
-        f"The identified protein targets are: {', '.join(proteins)}.\n\n"
-        f"Using the PubMed papers below (citation numbers start at "
-        f"[{offset + 1}]), write the following sections:\n\n"
-        f"1. **FDA-Approved Drugs and Candidate Compounds**: For each protein "
-        f"target, discuss FDA-approved drugs (or promising candidates) that "
-        f"bind to or inhibit these proteins. Include drug names, mechanism of "
-        f"action, and clinical evidence.\n"
-        f"2. **Drug–Protein Interaction Summary Table** (Markdown table): "
-        f"columns = Protein Target | Drug Name | Mechanism | FDA Status | Key Ref.\n"
-        f"3. **Conclusion and Future Directions**: Summarise the therapeutic "
-        f"landscape and open research questions.\n"
-        f"4. **References** for papers [{offset + 1}] onward.\n\n"
-        f"Papers:\n{re_numbered_drug_text}"
-    )
-    drug_review = query_openai(system_drugs, user_drugs)
 
     # ----- Step 5b: Speculative / repurposing drug discovery via Exa + OpenAI -----
     print("\n>> Step 5b: Searching for non-obvious repurposable FDA drugs via Exa + OpenAI …")
@@ -567,132 +488,39 @@ def _discover_repurposing_candidates(
         if search_results else "(No web search results found.)"
     )
 
-    system = (
-        "You are a computational pharmacology expert specialising in drug "
-        "repurposing and polypharmacology. Write a detailed Markdown section "
-        "for a literature review, grounded ONLY in the web search results "
-        "provided below. Be exhaustive: include drugs from cardiology, "
-        "psychiatry, infectious disease, metabolic disorders, autoimmune "
-        "conditions, and any other field. Cite sources using their [N] "
-        "index from the search results below."
+    return query_prompt(
+        "literature/repurposing_candidates",
+        disease=disease,
+        proteins=", ".join(proteins),
+        search_results=search_results_text,
     )
-    user = (
-        f"The following proteins have been identified as therapeutic targets "
-        f"in **{disease}**: {', '.join(proteins)}.\n\n"
-        f"Web search results on repurposing candidates:\n{search_results_text}\n\n"
-        f"Using ONLY the evidence above, identify FDA-approved drugs from ANY "
-        f"therapeutic area — not just oncology — that have known or "
-        f"computationally predicted interactions with these proteins. Consider:\n"
-        f"- Molecular docking studies showing binding affinity\n"
-        f"- Shared binding-site homology with known inhibitors\n"
-        f"- Off-target activity reported in pharmacovigilance data\n"
-        f"- Structural similarity (Tanimoto ≥ 0.5) to known ligands\n"
-        f"- Drug-gene interaction databases (DGIdb, DrugBank, STITCH)\n"
-        f"- Repurposing screens or virtual screening hits\n\n"
-        f"Write the following sections in Markdown:\n\n"
-        f"## Non-Obvious & Repurposing Drug Candidates\n\n"
-        f"For each drug, explain:\n"
-        f"- Original indication / FDA-approved use\n"
-        f"- Which target protein(s) it may interact with and the evidence\n"
-        f"- Proposed mechanism of action against {disease}\n"
-        f"- Confidence level (strong evidence / computational prediction / "
-        f"speculative)\n\n"
-        f"## Repurposing Candidates Summary Table\n\n"
-        f"Markdown table: Drug Name | Original Indication | Target Protein(s) "
-        f"| Evidence Type | Confidence\n\n"
-        f"Include at least 10 drugs, citing sources by [N]. Prioritise "
-        f"non-obvious candidates that are NOT already in mainstream "
-        f"{disease} research."
-    )
-    return query_openai(system, user)
 
 
 def _extract_drug_protein_map(drug_review_text: str, disease: str, proteins: list[str]) -> dict:
-    """Ask OpenAI to return a structured JSON of drugs and their
-    protein targets, then parse and return it."""
-    system = (
-        "You are a biomedical data-extraction assistant. "
-        "Return ONLY valid JSON with no extra text, no markdown fences. "
-        "The JSON must be an object with a top-level key \"drugs\" whose value "
-        "is an array of objects. Each object has: "
-        "\"drug\" (string), \"proteins\" (list of target protein symbols), "
-        "\"mechanism\" (string), \"fda_status\" (string), "
-        "\"category\" (\"mainstream\" or \"repurposing_candidate\")."
-    )
-    user = (
-        f"From the following literature review sections about {disease}, "
-        f"extract EVERY drug mentioned — both mainstream drugs for this "
-        f"disease AND repurposing candidates from other therapeutic areas — "
-        f"and which of these proteins each may "
-        f"bind to or react with: {', '.join(proteins)}.\n\n"
-        f"Mark drugs that are commonly used for {disease} as "
-        f"\"mainstream\". Mark drugs from other therapeutic areas or "
-        f"speculative candidates as \"repurposing_candidate\".\n\n"
-        f"Text:\n{drug_review_text}"
-    )
-    raw = query_openai(system, user)
-    data = _parse_json_response(raw)
+    """Ask OpenAI for the drugs mentioned in the review and the proteins
+    each may target, as a schema-constrained ``DrugProteinMap``.
 
-    # If first attempt fails, ask OpenAI to fix it
-    if "_parse_error" in data:
-        print("[OpenAI] JSON parse failed, requesting cleaned JSON …")
-        fix_system = (
-            "You are a JSON repair assistant. The user will give you malformed "
-            "JSON. Return ONLY the corrected, valid JSON. No explanation, no "
-            "markdown fences."
+    If the reply is unusable (refusal, truncation, ...) the map comes back
+    with no drugs and an ``llm_error`` field recording why, so the gap is
+    visible in review.json rather than silent.
+    """
+    data: dict = {"drugs": []}
+    try:
+        drug_map = query_prompt_structured(
+            "extraction/drug_protein_map", DrugProteinMap,
+            disease=disease,
+            proteins=", ".join(proteins),
+            review_text=drug_review_text,
         )
-        fixed_raw = query_openai(fix_system, raw)
-        data = _parse_json_response(fixed_raw)
-
-    # Ensure consistent top-level structure
-    if "drugs" not in data:
-        data = {"drugs": data if isinstance(data, list) else []}
+        data = drug_map.model_dump()
+    except LLMOutputError as e:
+        print(f"[OpenAI] Drug-protein map unusable ({e.kind}): {e}",
+              file=sys.stderr)
+        data["llm_error"] = {"kind": e.kind, "message": str(e)}
 
     data["disease"] = disease
     data["protein_targets"] = proteins
     return data
-
-
-def _parse_json_response(raw: str) -> dict:
-    """Best-effort parse of an LLM JSON response, handling common issues
-    like markdown fences, trailing commas, and unescaped control chars."""
-    # Strip markdown fences
-    cleaned = re.sub(r"^```(?:json)?\s*", "", raw.strip())
-    cleaned = re.sub(r"\s*```$", "", cleaned)
-
-    # Remove control characters that break JSON (except normal whitespace)
-    cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", cleaned)
-
-    # Fix trailing commas before } or ]
-    cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
-
-    # Attempt 1: parse the whole string
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        pass
-
-    # Attempt 2: extract the outermost JSON object
-    match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-    if match:
-        fragment = match.group()
-        fragment = re.sub(r",\s*([}\]])", r"\1", fragment)
-        try:
-            return json.loads(fragment)
-        except json.JSONDecodeError:
-            pass
-
-    # Attempt 3: extract a JSON array
-    match = re.search(r"\[.*\]", cleaned, re.DOTALL)
-    if match:
-        fragment = match.group()
-        fragment = re.sub(r",\s*([}\]])", r"\1", fragment)
-        try:
-            return {"drugs": json.loads(fragment)}
-        except json.JSONDecodeError:
-            pass
-
-    return {"drugs": [], "_parse_error": "Could not parse LLM response"}
 
 
 def _build_references(papers: list[dict]) -> str:

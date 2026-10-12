@@ -1,0 +1,23 @@
+---
+name: drug_analysis
+description: "Drug section of the literature review: approved drugs and candidates per target."
+input:
+  schema:
+    disease: string
+    proteins: string
+    papers: string
+---
+{{role "system"}}
+You are an expert pharmacology researcher. Write a detailed Markdown section about FDA-approved drugs and repurposing candidates. Be precise about drug names, mechanisms, and protein interactions.
+{{role "user"}}
+Continue the review on **{{disease}}**.
+
+Protein targets: {{proteins}}.
+
+Write sections on:
+1. FDA-Approved Drugs and Candidate Compounds per target
+2. Drug-Protein Interaction Summary Table
+3. Conclusion and Future Directions
+
+Papers:
+{{papers}}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { queryOpenAI } from "@/lib/openai"
+import { queryPrompt } from "@/lib/openai"
+import { promptVersions } from "@/lib/prompts"
 
 export const maxDuration = 300
 
@@ -17,32 +18,20 @@ export async function POST(req: Request) {
       )
     }
 
-    // Generate abstract
-    const abstract = await queryOpenAI(
-      "You are a scientific writer. Write a concise abstract (200-300 words, single paragraph) for an academic paper.",
-      `Write an abstract combining these two sections:\n\n` +
-        `LITERATURE REVIEW:\n${reviewMd.slice(0, 3000)}\n\n` +
-        `RESULTS:\n${resultsMd.slice(0, 3000)}\n\n` +
-        `Cover: clinical problem, computational approach, key targets, top candidates, conclusions.`
-    )
-
-    // Merge introduction
-    const introduction = await queryOpenAI(
-      "You are a scientific writer. Polish and merge these sections into a cohesive introduction. Preserve all citations.",
-      `Merge into a unified Introduction & Background section:\n\n${reviewMd.slice(0, 5000)}`
-    )
-
-    // Merge results
-    const mergedResults = await queryOpenAI(
-      "You are a scientific writer. Polish this results section. Keep ALL tables and numerical data. Preserve citations.",
-      `Polish this results section:\n\n${resultsMd}`
-    )
-
-    // Generate conclusion
-    const conclusion = await queryOpenAI(
-      "You are a scientific writer. Write a unified conclusion combining findings from both the literature review and computational results.",
-      `Write a conclusion for this paper:\n\nREVIEW:\n${reviewMd.slice(0, 2000)}\n\nRESULTS:\n${resultsMd.slice(0, 2000)}`
-    )
+    const abstract = await queryPrompt("paper/abstract", {
+      review_text: reviewMd.slice(0, 3000),
+      results_text: resultsMd.slice(0, 3000),
+    })
+    const introduction = await queryPrompt("paper/introduction", {
+      sections: reviewMd.slice(0, 5000),
+    })
+    const mergedResults = await queryPrompt("paper/results", {
+      results_text: resultsMd,
+    })
+    const conclusion = await queryPrompt("paper/conclusion_from_full_text", {
+      review_text: reviewMd.slice(0, 2000),
+      results_text: resultsMd.slice(0, 2000),
+    })
 
     // Assemble final paper
     const paperMd =
@@ -55,7 +44,15 @@ export async function POST(req: Request) {
       `---\n\n` +
       `## 3. Conclusion\n\n${conclusion}\n`
 
-    return NextResponse.json({ paperMd })
+    return NextResponse.json({
+      paperMd,
+      promptVersions: promptVersions([
+        "paper/abstract",
+        "paper/introduction",
+        "paper/results",
+        "paper/conclusion_from_full_text",
+      ]),
+    })
   } catch (error) {
     console.error("Paper API error:", error)
     return NextResponse.json(
