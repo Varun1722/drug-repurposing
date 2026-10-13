@@ -8,10 +8,16 @@
 //   queryPrompt            render the prompt file, then queryOpenAI
 //   queryPromptStructured  render the prompt file, then queryOpenAIStructured
 // Prefer the *Prompt helpers: prompt text lives in prompts/, not in routes.
+//
+// Failure handling (see lib/retry.ts): transient API failures (429/5xx,
+// timeouts, dropped connections) are retried with backoff and, if they persist,
+// throw ExternalCallError. An unusable *reply* throws LLMOutputError; an empty
+// or malformed one is asked for once more first.
 
 import { z } from "zod/v4"
 import { SCHEMAS } from "./llm-schemas"
 import { PromptError, renderPrompt, type PromptValue } from "./prompts"
+import { compactError, ExternalCallError, fetchWithRetry, type RetryPolicy } from "./retry"
 import { toStrictJsonSchema } from "./strict-schema"
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
@@ -22,47 +28,79 @@ interface ChatChoice {
   message?: { content?: string | null; refusal?: string | null }
 }
 
+/**
+ * Time budget for one call, covering every retry. A route's `maxDuration`
+ * bounds what it can spend: pass a smaller `maxTotalMs` from a 60s route so a
+ * stuck call fails with a clean error instead of the platform killing the
+ * request. The default fits the longer (180-300s) routes.
+ */
+export interface OpenAICallOptions {
+  maxTotalMs?: number
+}
+
+const OPENAI_POLICY: RetryPolicy = {
+  maxAttempts: 4,
+  baseDelayMs: 1_000,
+  maxDelayMs: 15_000,
+  maxTotalMs: 150_000,
+  maxRetryAfterMs: 20_000,
+}
+
 async function postChatCompletion(
   extra: Record<string, unknown>,
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  options: OpenAICallOptions = {}
 ): Promise<ChatChoice | undefined> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY not set")
 
-  const res = await fetch(OPENAI_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  // A chat completion has no side effects, so repeating it is safe.
+  const res = await fetchWithRetry(
+    OPENAI_API_URL,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        // No custom temperature — some models (e.g. gpt-5.6-terra) only
+        // support the default (1) and reject any other value.
+        max_completion_tokens: 8000,
+        ...extra,
+      }),
     },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      // No custom temperature — some models (e.g. gpt-5.6-terra) only
-      // support the default (1) and reject any other value.
-      max_completion_tokens: 8000,
-      ...extra,
-    }),
-  })
+    {
+      source: "openai",
+      policy: { ...OPENAI_POLICY, ...(options.maxTotalMs ? { maxTotalMs: options.maxTotalMs } : {}) },
+    }
+  )
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`OpenAI API error ${res.status}: ${text}`)
+  let data: { choices?: ChatChoice[] }
+  try {
+    data = await res.json()
+  } catch {
+    throw new ExternalCallError("openai", "bad_response", "openai: response was not valid JSON")
   }
-
-  const data = await res.json()
-  return data.choices?.[0] as ChatChoice | undefined
+  const choice = data.choices?.[0]
+  if (!choice) {
+    throw new ExternalCallError("openai", "bad_response", "openai: response had no choices[0]")
+  }
+  return choice
 }
 
 export async function queryOpenAI(
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  options: OpenAICallOptions = {}
 ): Promise<string> {
-  const choice = await postChatCompletion({}, systemPrompt, userPrompt)
+  const choice = await postChatCompletion({}, systemPrompt, userPrompt, options)
   return choice?.message?.content ?? ""
 }
 
@@ -82,12 +120,17 @@ export type LLMOutputErrorKind =
  * decide the fallback; they should record `kind` instead of failing silently.
  */
 export class LLMOutputError extends Error {
+  /** How many replies were tried (an empty/malformed one is asked for again once). */
+  attempts: number
+
   constructor(
     readonly kind: LLMOutputErrorKind,
-    message: string
+    message: string,
+    attempts = 1
   ) {
     super(message)
     this.name = "LLMOutputError"
+    this.attempts = attempts
   }
 }
 
@@ -102,19 +145,56 @@ function jsonSchemaFor(schema: z.ZodType): Record<string, unknown> {
   return jsonSchema
 }
 
+// Kinds where asking again can help: the reply was empty or malformed, which a
+// fresh sample usually fixes. A refusal, a content-filter stop or a truncated
+// reply would just come back the same way.
+const REPAIRABLE: ReadonlySet<LLMOutputErrorKind> = new Set(["empty", "invalid_json", "schema_mismatch"])
+const MAX_OUTPUT_ATTEMPTS = 2
+
 /**
  * Chat completion constrained to `schema` via `response_format: json_schema`
  * (strict). Returns the parsed, Zod-validated object. `name` labels the schema
  * in the request ([a-zA-Z0-9_-], max 64 chars).
  *
- * @throws LLMOutputError when the reply is a refusal, truncated, filtered,
- *         empty, or fails validation. Network/HTTP failures throw a plain Error.
+ * An empty or malformed reply is retried once, with a one-line description of
+ * what was wrong appended to the prompt so the model can correct it.
+ *
+ * @throws LLMOutputError when the reply is a refusal, truncated, filtered, or
+ *         still unusable on the second try. ExternalCallError when the API
+ *         could not be reached (after retries).
  */
 export async function queryOpenAIStructured<T extends z.ZodType>(
   systemPrompt: string,
   userPrompt: string,
   schema: T,
-  name: string
+  name: string,
+  options: OpenAICallOptions = {}
+): Promise<z.infer<T>> {
+  let prompt = userPrompt
+  // One deadline across both tries: the re-ask gets what is left, not a fresh budget.
+  const deadline = Date.now() + (options.maxTotalMs ?? OPENAI_POLICY.maxTotalMs)
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const remaining = Math.max(1, deadline - Date.now())
+      return await structuredOnce(systemPrompt, prompt, schema, name, { maxTotalMs: remaining })
+    } catch (error) {
+      if (!(error instanceof LLMOutputError)) throw error
+      error.attempts = attempt
+      if (!REPAIRABLE.has(error.kind) || attempt >= MAX_OUTPUT_ATTEMPTS) throw error
+      console.warn(`[openai] Reply unusable (${error.kind}); asking again.`)
+      prompt =
+        `${userPrompt}\n\nYour previous reply was rejected: ${compactError(error, 300)}\n` +
+        `Reply again with JSON that satisfies the schema.`
+    }
+  }
+}
+
+async function structuredOnce<T extends z.ZodType>(
+  systemPrompt: string,
+  userPrompt: string,
+  schema: T,
+  name: string,
+  options: OpenAICallOptions
 ): Promise<z.infer<T>> {
   const choice = await postChatCompletion(
     {
@@ -124,7 +204,8 @@ export async function queryOpenAIStructured<T extends z.ZodType>(
       },
     },
     systemPrompt,
-    userPrompt
+    userPrompt,
+    options
   )
 
   const message = choice?.message
@@ -164,7 +245,8 @@ export async function queryOpenAIStructured<T extends z.ZodType>(
 /** Render `prompts/<id>.prompt` and return the model's free-text reply. */
 export async function queryPrompt(
   id: string,
-  variables: Record<string, PromptValue>
+  variables: Record<string, PromptValue>,
+  options: OpenAICallOptions = {}
 ): Promise<string> {
   const prompt = renderPrompt(id, variables)
   if (prompt.outputSchema !== null) {
@@ -172,7 +254,7 @@ export async function queryPrompt(
       `${id} declares output.schema '${prompt.outputSchema}'; call queryPromptStructured instead`
     )
   }
-  return queryOpenAI(prompt.system, prompt.user)
+  return queryOpenAI(prompt.system, prompt.user, options)
 }
 
 /**
@@ -184,7 +266,8 @@ export async function queryPrompt(
 export async function queryPromptStructured<T extends z.ZodType>(
   id: string,
   variables: Record<string, PromptValue>,
-  schema: T
+  schema: T,
+  options: OpenAICallOptions = {}
 ): Promise<z.infer<T>> {
   const prompt = renderPrompt(id, variables)
   const registry: Record<string, z.ZodType> = SCHEMAS
@@ -195,5 +278,5 @@ export async function queryPromptStructured<T extends z.ZodType>(
         `but was called with a different schema`
     )
   }
-  return queryOpenAIStructured(prompt.system, prompt.user, schema, prompt.outputSchema!)
+  return queryOpenAIStructured(prompt.system, prompt.user, schema, prompt.outputSchema!, options)
 }

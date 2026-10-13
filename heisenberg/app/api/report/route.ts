@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { queryPrompt } from "@/lib/openai"
 import { promptVersions } from "@/lib/prompts"
+import { errorPayload, routeBudget } from "@/lib/retry"
 import type { DockingResult, DockingTarget } from "@/lib/types"
 
 export const maxDuration = 180
@@ -121,10 +122,12 @@ export async function POST(req: Request) {
     const repurposing = formatCategoryBlock(classified.repurposing, targets)
     const novel = formatCategoryBlock(classified.novel, targets)
 
+    // The three calls share one deadline, so retries cannot outlast maxDuration.
+    const budget = routeBudget(170_000)
     const methodology = await queryPrompt("report/methodology", {
       disease,
       overview: overviewText,
-    })
+    }, { maxTotalMs: budget() })
     const results = await queryPrompt("report/results", {
       disease,
       disease_title: toTitleCase(disease),
@@ -132,12 +135,12 @@ export async function POST(req: Request) {
       disease_purposed,
       repurposing,
       novel,
-    })
+    }, { maxTotalMs: budget() })
     const conclusion = await queryPrompt("report/conclusion", {
       disease,
       overview: overviewText,
       repurposing,
-    })
+    }, { maxTotalMs: budget() })
 
     const resultsMd =
       `# Results: Drug Repurposing Analysis for ${disease}\n\n` +
@@ -155,9 +158,7 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error("Report API error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+    const { status, body } = errorPayload(error)
+    return NextResponse.json(body, { status })
   }
 }

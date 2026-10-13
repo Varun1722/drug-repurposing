@@ -1,4 +1,5 @@
 import { pollDockJob } from "@/lib/dockJobs"
+import { errorPayload } from "@/lib/retry"
 
 // One quick read of the job's event log — fast regardless of how long the
 // underlying Modal job has been running.
@@ -21,9 +22,7 @@ export async function GET(req: Request) {
     const status = await pollDockJob(jobId, Number.isFinite(since) ? since : 0)
     return Response.json(status)
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+    const { status, body } = errorPayload(error)
+    return Response.json(body, { status })
   }
 }

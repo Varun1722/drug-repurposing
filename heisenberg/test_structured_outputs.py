@@ -7,10 +7,12 @@ import json
 from typing import List, Optional
 
 import pytest
+import requests
 from pydantic import BaseModel, ConfigDict
 
 import llm
 import review
+from resilience import ExternalCallError
 from llm_schemas import (
     DrugNameList,
     DrugProteinMap,
@@ -101,16 +103,12 @@ def test_field_named_like_a_keyword_is_allowed():
 # ---------------------------------------------------------------------------
 
 class _FakeResponse:
-    def __init__(self, choice, status=200):
+    def __init__(self, choice, status=200, text="", headers=None):
         self._choice = choice
         self.status_code = status
         self.ok = status == 200
-
-    def raise_for_status(self):
-        if not self.ok:
-            import requests
-
-            raise requests.HTTPError(f"{self.status_code} error")
+        self.text = text
+        self.headers = headers or {}
 
     def json(self):
         return {"choices": [self._choice]}
@@ -118,23 +116,36 @@ class _FakeResponse:
 
 @pytest.fixture
 def post(monkeypatch):
-    """Patch requests.post; returns a function to set the next reply and a
-    list capturing request payloads."""
+    """Patch requests.post (and sleeping, so retries are instant).
+
+    Returns ``reply(choice, status=200, text="", headers=None)``, which sets the
+    reply used for every request, and ``reply.script([...])``, which queues
+    one ``(choice, status)`` per request before falling back to that reply.
+    ``reply.sent`` captures request payloads and ``reply.sleeps`` the backoff
+    waits."""
     monkeypatch.setattr(llm, "OPENAI_API_KEY", "test-key")
+    sleeps = []
+    monkeypatch.setattr("time.sleep", sleeps.append)
     sent = []
-    state = {"choice": None, "status": 200}
+    queue = []
+    state = {"choice": None, "status": 200, "text": "", "headers": None}
 
     def fake_post(url, json=None, headers=None, timeout=None):  # noqa: A002
         sent.append(json)
-        return _FakeResponse(state["choice"], state["status"])
+        if queue:
+            choice, status = queue.pop(0)
+            return _FakeResponse(choice, status)
+        return _FakeResponse(state["choice"], state["status"],
+                             state["text"], state["headers"])
 
-    monkeypatch.setattr(llm.requests, "post", fake_post)
+    monkeypatch.setattr(requests, "post", fake_post)
 
-    def reply(choice, status=200):
-        state["choice"] = choice
-        state["status"] = status
+    def reply(choice, status=200, text="", headers=None):
+        state.update(choice=choice, status=status, text=text, headers=headers)
 
+    reply.script = lambda items: queue.extend(items)
     reply.sent = sent
+    reply.sleeps = sleeps
     return reply
 
 
@@ -210,12 +221,125 @@ def test_decision_with_nulls_round_trips(post):
     assert decision.drug_names == ["atorvastatin"]
 
 
-def test_http_errors_are_not_wrapped(post):
-    import requests
+# ---------------------------------------------------------------------------
+# Retries: transport failures
+# ---------------------------------------------------------------------------
 
-    post({}, status=429)
-    with pytest.raises(requests.HTTPError):
+def test_transient_http_errors_are_retried_then_succeed(post):
+    good = _ok(json.dumps({"proteins": ["EGFR"]}))
+    post.script([({}, 503), ({}, 429)])
+    post(good)
+    result = llm.query_openai_structured("sys", "usr", ProteinList)
+
+    assert result.proteins == ["EGFR"]
+    assert len(post.sent) == 3
+    assert len(post.sleeps) == 2
+
+
+def test_persistent_server_error_raises_external_call_error(post):
+    post({}, status=503)
+    with pytest.raises(ExternalCallError) as exc:
         llm.query_openai_structured("sys", "usr", ProteinList)
+
+    assert exc.value.source == "openai"
+    assert exc.value.kind == "server"
+    assert exc.value.attempts == llm.OPENAI_POLICY.max_attempts
+    assert len(post.sent) == llm.OPENAI_POLICY.max_attempts
+
+
+def test_rate_limit_honours_retry_after(post):
+    post({}, status=429, headers={"retry-after": "7"})
+    with pytest.raises(ExternalCallError) as exc:
+        llm.query_openai_structured("sys", "usr", ProteinList)
+
+    assert exc.value.kind == "rate_limited"
+    assert exc.value.attempts == llm.OPENAI_POLICY.max_attempts
+    assert post.sleeps and all(wait >= 7 for wait in post.sleeps)
+
+
+def test_retry_after_longer_than_the_cap_is_surfaced_not_slept(post):
+    post({}, status=429, headers={"retry-after": "600"})
+    with pytest.raises(ExternalCallError) as exc:
+        llm.query_openai_structured("sys", "usr", ProteinList)
+
+    assert exc.value.kind == "rate_limited"
+    assert post.sleeps == [] and len(post.sent) == 1
+
+
+def test_exhausted_credit_is_not_retried(post):
+    body = json.dumps({"error": {"code": "credit_balance_exhausted",
+                                 "type": "insufficient_quota"}})
+    post({}, status=429, text=body)
+    with pytest.raises(ExternalCallError) as exc:
+        llm.query_openai_structured("sys", "usr", ProteinList)
+
+    assert exc.value.kind == "quota"
+    assert len(post.sent) == 1 and post.sleeps == []
+
+
+def test_bad_request_is_not_retried(post):
+    post({}, status=400)
+    with pytest.raises(ExternalCallError) as exc:
+        llm.query_openai("sys", "usr")
+
+    assert exc.value.kind == "client"
+    assert len(post.sent) == 1
+
+
+def test_response_without_choices_is_a_bad_response(post, monkeypatch):
+    class NoChoices(_FakeResponse):
+        def json(self):
+            return {"error": "?"}
+
+    monkeypatch.setattr(requests, "post", lambda *a, **k: NoChoices(None))
+    with pytest.raises(ExternalCallError) as exc:
+        llm.query_openai("sys", "usr")
+
+    assert exc.value.kind == "bad_response"
+
+
+# ---------------------------------------------------------------------------
+# Retries: unusable replies ("repair" attempt)
+# ---------------------------------------------------------------------------
+
+def test_malformed_reply_is_retried_with_the_problem_in_the_prompt(post):
+    good = _ok(json.dumps({"proteins": ["EGFR"]}))
+    post.script([(_ok('{"proteins": "EGFR"}'), 200)])
+    post(good)
+    result = llm.query_openai_structured("sys", "original prompt", ProteinList)
+
+    assert result.proteins == ["EGFR"]
+    assert len(post.sent) == 2
+    first_user = post.sent[0]["messages"][1]["content"]
+    second_user = post.sent[1]["messages"][1]["content"]
+    assert first_user == "original prompt"
+    assert second_user.startswith("original prompt")
+    assert "previous reply was rejected" in second_user
+    assert "failed validation" in second_user
+
+
+def test_still_malformed_after_second_try_raises_with_attempt_count(post):
+    post(_ok("not json"))
+    with pytest.raises(llm.LLMOutputError) as exc:
+        llm.query_openai_structured("sys", "usr", ProteinList)
+
+    assert exc.value.kind == "invalid_json"
+    assert exc.value.attempts == 2
+    assert len(post.sent) == 2
+
+
+@pytest.mark.parametrize("choice", [
+    {"finish_reason": "stop", "message": {"content": None, "refusal": "no"}},
+    _ok('{"proteins": ["EG', finish_reason="length"),
+    _ok("{", finish_reason="content_filter"),
+], ids=["refusal", "truncated", "content_filter"])
+def test_refusal_truncation_and_filter_are_not_retried(post, choice):
+    post(choice)
+    with pytest.raises(llm.LLMOutputError) as exc:
+        llm.query_openai_structured("sys", "usr", ProteinList)
+
+    assert exc.value.attempts == 1
+    assert len(post.sent) == 1
 
 
 def test_plain_query_openai_is_unchanged(post):
@@ -280,3 +404,7 @@ def test_analyze_and_decide_falls_back_to_proceed_and_records_why(post):
     assert decision["action"] == "proceed"
     assert "refusal" in decision["rationale"]
     assert state["expansion_history"][0]["action"] == "proceed"
+    # ... and is recorded as a (non-fatal) error in the state, not just the rationale
+    assert [(e["stage"], e["source"], e["kind"], e["fatal"]) for e in state["errors"]] == [
+        ("reasoning", "openai", "refusal", False)
+    ]

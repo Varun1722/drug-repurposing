@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { queryPromptStructured, LLMOutputError } from "@/lib/openai"
 import { ReasoningDecisionSchema } from "@/lib/llm-schemas"
+import { errorPayload } from "@/lib/retry"
 import type { DockingResult, ReasoningDecision } from "@/lib/types"
 
 export const maxDuration = 60
@@ -56,7 +57,10 @@ export async function POST(req: Request) {
           expansion_history: JSON.stringify(expansionHistory),
           top_results: JSON.stringify(topResults, null, 2),
         },
-        ReasoningDecisionSchema
+        ReasoningDecisionSchema,
+        // Leave headroom under maxDuration so a stuck call fails with a clean
+        // error instead of the platform killing the request.
+        { maxTotalMs: 50_000 }
       )
       decision = {
         action: parsed.action,
@@ -94,9 +98,7 @@ export async function POST(req: Request) {
     return NextResponse.json(decision)
   } catch (error) {
     console.error("Analyze API error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+    const { status, body } = errorPayload(error)
+    return NextResponse.json(body, { status })
   }
 }

@@ -17,6 +17,9 @@ import type {
   ChatAction,
 } from "@/lib/types"
 import { parseFdaCategory } from "@/lib/types"
+import type { FailureWarning } from "@/lib/retry"
+import { describeWarnings, errorMessageFrom } from "@/lib/warnings"
+import { pollDockJobUntilDone } from "@/lib/dockPolling"
 
 type AppPhase =
   | "idle"
@@ -336,6 +339,8 @@ export default function Home() {
       let reviewDrugs: ReviewDrug[] = []
       let finalReviewMd = ""
       let papersAnalyzed = 0
+      // External calls that failed even after retries (from both streams below).
+      const failedCalls: FailureWarning[] = []
 
       try {
         // --- Review SSE stream ---
@@ -384,6 +389,8 @@ export default function Home() {
               "system",
               `Identified ${reviewDrugs.length} candidate drugs from literature review.`
             )
+          } else if (event.type === "warning") {
+            failedCalls.push(event.warning as FailureWarning)
           } else if (event.type === "error") {
             throw new Error(event.message as string)
           }
@@ -426,6 +433,8 @@ export default function Home() {
             const finalTargets =
               (event.targets as DockingTarget[]) || collectedTargets
             setTargets(finalTargets)
+          } else if (event.type === "warning") {
+            failedCalls.push(event.warning as FailureWarning)
           } else if (event.type === "error") {
             console.error("Structures error:", event.message)
           }
@@ -474,11 +483,16 @@ export default function Home() {
 
         // Chat: analysis complete — ask user how to proceed
         const undockableNote = undockableCount > 0
-          ? `\n\n${undockableCount} drug${undockableCount === 1 ? " was" : "s were"} excluded because PubChem couldn't resolve their molecular structure.`
+          ? `\n\n${undockableCount} drug${undockableCount === 1 ? " was" : "s were"} excluded because no molecular structure was available${failedCalls.length > 0 ? " (not found, or the lookup failed: see below)" : ""}.`
+          : ""
+        // A failed call is not the same as "nothing found": say so, so a missing
+        // drug or structure is not mistaken for a negative result.
+        const failedNote = failedCalls.length > 0
+          ? `\n\n⚠️ ${describeWarnings(failedCalls)}, so some candidates or structures may be missing. Transient failures were already retried; running the analysis again may help if the cause was temporary.`
           : ""
         addMessage(
           "assistant",
-          `Analysis complete! I analyzed ${papersAnalyzed} papers and found ${reviewProteins.length} protein targets with ${dockableDrugs.length} dockable candidates.${undockableNote}\n\nAll dockable drugs are selected. You can deselect any from the table, then choose how to proceed.`,
+          `Analysis complete! I analyzed ${papersAnalyzed} papers and found ${reviewProteins.length} protein targets with ${dockableDrugs.length} dockable candidates.${undockableNote}${failedNote}\n\nAll dockable drugs are selected. You can deselect any from the table, then choose how to proceed.`,
           [
             {
               id: "dock-all",
@@ -573,60 +587,51 @@ export default function Home() {
       const { jobId } = (await submitRes.json()) as { jobId: string }
 
       let completedResults: DockingResult[] = []
-      let since = 0
-      let done = false
 
       // Docking runs in the background on Modal (no held-open connection,
-      // no Vercel duration limit) — just poll for new events until done.
-      while (!done) {
-        await new Promise((resolve) => setTimeout(resolve, 2000))
+      // no Vercel duration limit) — poll for new events until done. A failed
+      // poll is retried on the next tick (see lib/dockPolling.ts).
+      await pollDockJobUntilDone({
+        jobId,
+        fetchStatus: (since) =>
+          fetch(`/api/dock/status?jobId=${encodeURIComponent(jobId)}&since=${since}`),
+        sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+        onRetry: (failed, max) =>
+          setStatusMessage(`Docking status check failed (${failed}/${max}); retrying...`),
+        onEvents: (events) => {
+          for (const event of events) {
+            if (event.type === "progress") {
+              setStatusMessage(event.message)
+            } else if (event.type === "target_complete") {
+              const targetResults = event.results
+              completedResults = [...completedResults, ...targetResults]
 
-        const statusRes = await fetch(
-          `/api/dock/status?jobId=${jobId}&since=${since}`
-        )
-        if (!statusRes.ok)
-          throw new Error(`Dock status error: ${statusRes.status}`)
-
-        const status = (await statusRes.json()) as {
-          events: DockJobEvent[]
-          nextIndex: number
-          done: boolean
-        }
-        since = status.nextIndex
-        done = status.done
-
-        for (const event of status.events) {
-          if (event.type === "progress") {
-            setStatusMessage(event.message)
-          } else if (event.type === "target_complete") {
-            const targetResults = event.results
-            completedResults = [...completedResults, ...targetResults]
-
-            const latestDrugs = drugsRef.current
-            setDrugSimStatuses((prev) => {
-              const next = { ...prev }
-              for (const r of targetResults) {
-                const matchingDrug = latestDrugs?.find(
-                  (d) => d.name.toLowerCase() === r.name.toLowerCase()
-                )
-                if (matchingDrug) {
-                  next[matchingDrug.id] = "complete"
+              const latestDrugs = drugsRef.current
+              setDrugSimStatuses((prev) => {
+                const next = { ...prev }
+                for (const r of targetResults) {
+                  const matchingDrug = latestDrugs?.find(
+                    (d) => d.name.toLowerCase() === r.name.toLowerCase()
+                  )
+                  if (matchingDrug) {
+                    next[matchingDrug.id] = "complete"
+                  }
                 }
+                return next
+              })
+            } else if (event.type === "complete") {
+              completedResults = event.allResults
+            } else if (event.type === "error") {
+              const msg = event.message
+              if (msg.includes("No valid ligands") || msg.includes("skipping")) {
+                console.warn("Docking skipped:", msg)
+              } else {
+                console.error("Docking error:", msg)
               }
-              return next
-            })
-          } else if (event.type === "complete") {
-            completedResults = event.allResults
-          } else if (event.type === "error") {
-            const msg = event.message
-            if (msg.includes("No valid ligands") || msg.includes("skipping")) {
-              console.warn("Docking skipped:", msg)
-            } else {
-              console.error("Docking error:", msg)
             }
           }
-        }
-      }
+        },
+      })
 
       // Update state with all results
       const newAllResults = [...allDockingResults, ...completedResults]
@@ -759,9 +764,22 @@ export default function Home() {
             simulatingRef.current = false
             return
           }
+        } else {
+          // The reasoning step failed (after retries): say so instead of
+          // claiming there was nothing to suggest.
+          const reason = await errorMessageFrom(analyzeRes, `HTTP ${analyzeRes.status}`)
+          console.error("Analysis error:", reason)
+          addMessage(
+            "assistant",
+            `⚠️ The AI analysis step was unavailable (${reason}), so I can't suggest further expansion. The docking results above are unaffected.`
+          )
         }
       } catch (err) {
         console.error("Analysis error:", err)
+        addMessage(
+          "assistant",
+          `⚠️ The AI analysis step failed (${err instanceof Error ? err.message : "unknown error"}), so I can't suggest further expansion. The docking results above are unaffected.`
+        )
       }
 
       setPhase("done")
@@ -864,6 +882,11 @@ export default function Home() {
       if (expandRes.ok) {
         const expandData = await expandRes.json()
         const newTargets = expandData.newTargets as DockingTarget[]
+        const expandWarnings = (expandData.warnings ?? []) as FailureWarning[]
+        const expandFailedNote =
+          expandWarnings.length > 0
+            ? `\n\n⚠️ ${describeWarnings(expandWarnings)}, so there may be more similar compounds than the ones found.`
+            : ""
 
         if (newTargets.length > 0) {
           // Build drug entries, tracking which proteins each ligand was found for
@@ -943,7 +966,7 @@ export default function Home() {
 
           addMessage(
             "assistant",
-            `Found ${newDrugEntries.length} similar compounds! They've been added to the table and auto-selected. Review them and click "Run GNINA" when ready.`,
+            `Found ${newDrugEntries.length} similar compounds! They've been added to the table and auto-selected. Review them and click "Run GNINA" when ready.${expandFailedNote}`,
             [
               {
                 id: "dock-selected",
@@ -964,14 +987,19 @@ export default function Home() {
           setPhase("review-ready")
           setStatusMessage("")
         } else {
+          // "Found nothing" and "the search failed" are different results.
           addMessage(
             "assistant",
-            "No new similar compounds found beyond what we already have."
+            expandWarnings.length > 0
+              ? `The similarity search did not complete: ${describeWarnings(expandWarnings)}. That is not the same as finding nothing; try again in a moment.`
+              : "No new similar compounds found beyond what we already have."
           )
           setPhase("done")
           setStatusMessage("")
         }
       } else {
+        const reason = await errorMessageFrom(expandRes, `HTTP ${expandRes.status}`)
+        addMessage("assistant", `The similar-compound search failed: ${reason}`)
         setPhase("done")
         setStatusMessage("")
       }
@@ -1015,7 +1043,8 @@ export default function Home() {
       })
 
       if (!expandRes.ok) {
-        addMessage("assistant", "Expansion failed. You can still generate a report or search similar compounds manually.")
+        const reason = await errorMessageFrom(expandRes, `HTTP ${expandRes.status}`)
+        addMessage("assistant", `Expansion failed: ${reason}. You can still generate a report or search similar compounds manually.`)
         setPhase("done")
         setStatusMessage("")
         return
@@ -1023,9 +1052,20 @@ export default function Home() {
 
       const expandData = await expandRes.json()
       const newTargets = expandData.newTargets as DockingTarget[]
+      const expandWarnings = (expandData.warnings ?? []) as FailureWarning[]
+      const expandFailedNote =
+        expandWarnings.length > 0
+          ? `\n\n⚠️ ${describeWarnings(expandWarnings)}, so the expansion may be incomplete.`
+          : ""
 
       if (newTargets.length === 0) {
-        addMessage("assistant", "No new compounds found from expansion. You can search similar compounds manually or generate a report.")
+        // "Found nothing" and "the search failed" are different results.
+        addMessage(
+          "assistant",
+          expandWarnings.length > 0
+            ? `The expansion did not complete: ${describeWarnings(expandWarnings)}. That is not the same as finding nothing; try again in a moment, or search similar compounds manually.`
+            : "No new compounds found from expansion. You can search similar compounds manually or generate a report."
+        )
         setPhase("done")
         setStatusMessage("")
         return
@@ -1106,7 +1146,7 @@ export default function Home() {
 
       addMessage(
         "assistant",
-        `Found ${newDrugEntries.length} new compounds from AI expansion! They've been added to the table. Dock them or generate a report.`,
+        `Found ${newDrugEntries.length} new compounds from AI expansion! They've been added to the table. Dock them or generate a report.${expandFailedNote}`,
         [
           {
             id: "dock-expanded",

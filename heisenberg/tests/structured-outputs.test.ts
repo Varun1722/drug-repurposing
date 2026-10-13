@@ -19,6 +19,7 @@ import {
   queryPromptStructured,
 } from "../lib/openai"
 import { PromptError } from "../lib/prompts"
+import { ExternalCallError } from "../lib/retry"
 import { toStrictJsonSchema } from "../lib/strict-schema"
 
 describe("strict schema conversion", () => {
@@ -61,19 +62,40 @@ describe("queryOpenAIStructured / queryPrompt*", () => {
   const realFetch = globalThis.fetch
   let lastBody: any
 
-  const reply = (choice: Choice, status = 200) => {
+  let bodies: any[] = []
+  let queue: Array<[Choice, number]> = []
+  const realSetTimeout = globalThis.setTimeout
+  const waits: number[] = []
+
+  // `reply` sets the response for every request; `queue` is consumed first, one per request.
+  const reply = (choice: Choice, status = 200, extra: { text?: string; headers?: Record<string, string> } = {}) => {
     globalThis.fetch = (async (_url: unknown, init: { body: string }) => {
       lastBody = JSON.parse(init.body)
-      return { ok: status === 200, status, text: async () => "boom", json: async () => ({ choices: [choice] }) }
+      bodies.push(lastBody)
+      const [c, st] = queue.shift() ?? [choice, status]
+      return new Response(st >= 400 ? (extra.text ?? "boom") : JSON.stringify({ choices: [c] }), {
+        status: st,
+        headers: extra.headers,
+      })
     }) as unknown as typeof fetch
   }
   const ok = (content: unknown, finish_reason = "stop"): Choice => ({ finish_reason, message: { content: JSON.stringify(content) } })
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = "test-key"
+    bodies = []
+    queue = []
+    waits.length = 0
+    // Backoff waits are recorded and skipped, so retry tests run instantly.
+    globalThis.setTimeout = ((fn: () => void, ms?: number) => {
+      waits.push(ms ?? 0)
+      fn()
+      return 0
+    }) as unknown as typeof setTimeout
   })
   afterEach(() => {
     globalThis.fetch = realFetch
+    globalThis.setTimeout = realSetTimeout
   })
 
   const call = () => queryOpenAIStructured("sys", "usr", ProteinListSchema, "ProteinList")
@@ -108,9 +130,117 @@ describe("queryOpenAIStructured / queryPrompt*", () => {
     assert.equal(await kindOf(ok({ proteins: "EGFR" })), "schema_mismatch")
   })
 
-  it("keeps HTTP errors as plain Errors", async () => {
-    reply({}, 429)
-    await assert.rejects(call(), (e: Error) => !(e instanceof LLMOutputError) && /OpenAI API error 429/.test(e.message))
+  it("retries transient API errors, then succeeds", async () => {
+    reply(ok({ proteins: ["EGFR"] }))
+    queue = [[{}, 503], [{}, 429]]
+    assert.deepEqual(await call(), { proteins: ["EGFR"] })
+    assert.equal(bodies.length, 3)
+    assert.equal(waits.length, 2)
+  })
+
+  it("throws ExternalCallError (not LLMOutputError) when the API keeps failing", async () => {
+    reply({}, 503)
+    await assert.rejects(call(), (e: unknown) => {
+      assert.ok(e instanceof ExternalCallError && !(e instanceof LLMOutputError))
+      assert.equal(e.source, "openai")
+      assert.equal(e.kind, "server")
+      assert.equal(e.attempts, 4)
+      return true
+    })
+    assert.equal(bodies.length, 4)
+  })
+
+  it("does not retry an exhausted credit balance", async () => {
+    reply({}, 429, { text: JSON.stringify({ error: { code: "credit_balance_exhausted", type: "insufficient_quota" } }) })
+    await assert.rejects(call(), (e: unknown) => e instanceof ExternalCallError && e.kind === "quota")
+    assert.equal(bodies.length, 1)
+    assert.equal(waits.length, 0)
+  })
+
+  it("does not retry a bad request", async () => {
+    reply({}, 400)
+    await assert.rejects(call(), (e: unknown) => e instanceof ExternalCallError && e.kind === "client")
+    assert.equal(bodies.length, 1)
+  })
+
+  it("honours Retry-After on a rate limit", async () => {
+    reply({}, 429, { headers: { "retry-after": "7" } })
+    await assert.rejects(call(), (e: unknown) => e instanceof ExternalCallError && e.kind === "rate_limited")
+    assert.ok(waits.length > 0 && waits.every((w) => w >= 7000))
+  })
+
+  it("surfaces a Retry-After longer than it will wait", async () => {
+    reply({}, 429, { headers: { "retry-after": "600" } })
+    await assert.rejects(call(), (e: unknown) => e instanceof ExternalCallError && e.attempts === 1)
+    assert.equal(waits.length, 0)
+  })
+
+  it("a response with no choices is a bad_response", async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({ error: "?" }), { status: 200 })) as unknown as typeof fetch
+    await assert.rejects(call(), (e: unknown) => e instanceof ExternalCallError && e.kind === "bad_response")
+  })
+
+  it("asks again once for a malformed reply, telling the model what was wrong", async () => {
+    reply(ok({ proteins: ["EGFR"] }))
+    queue = [[ok({ proteins: "EGFR" }), 200]]
+    assert.deepEqual(await queryOpenAIStructured("sys", "original prompt", ProteinListSchema, "ProteinList"), {
+      proteins: ["EGFR"],
+    })
+    assert.equal(bodies.length, 2)
+    assert.equal(bodies[0].messages[1].content, "original prompt")
+    assert.match(bodies[1].messages[1].content, /^original prompt\n\nYour previous reply was rejected: Reply failed validation/)
+  })
+
+  it("gives up after the second unusable reply and reports the attempt count", async () => {
+    reply({ finish_reason: "stop", message: { content: "not json" } })
+    await assert.rejects(call(), (e: unknown) => e instanceof LLMOutputError && e.kind === "invalid_json" && e.attempts === 2)
+    assert.equal(bodies.length, 2)
+  })
+
+  it("does not ask again after a refusal, truncation or content filter", async () => {
+    for (const choice of [
+      { finish_reason: "stop", message: { content: null, refusal: "no" } },
+      { finish_reason: "length", message: { content: '{"proteins":["EG' } },
+      { finish_reason: "content_filter", message: { content: "{" } },
+    ] as Choice[]) {
+      bodies = []
+      reply(choice)
+      await assert.rejects(call(), (e: unknown) => e instanceof LLMOutputError && e.attempts === 1)
+      assert.equal(bodies.length, 1)
+    }
+  })
+
+  it("the re-ask shares the call's time budget instead of getting a fresh one", async () => {
+    const real = AbortSignal.timeout
+    const asked: number[] = []
+    AbortSignal.timeout = ((ms: number) => {
+      asked.push(ms)
+      return real.call(AbortSignal, ms)
+    }) as typeof AbortSignal.timeout
+    try {
+      reply(ok({ proteins: ["EGFR"] }))
+      queue = [[ok({ proteins: "EGFR" }), 200]]
+      // first reply is malformed; the second attempt must get what is left of 5s
+      const slow = globalThis.fetch
+      globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+        await new Promise((r) => realSetTimeout(r, 80))
+        return slow(...args)
+      }) as typeof fetch
+      await queryOpenAIStructured("s", "u", ProteinListSchema, "ProteinList", { maxTotalMs: 5_000 })
+    } finally {
+      AbortSignal.timeout = real
+    }
+    assert.equal(asked.length, 2)
+    assert.ok(asked[1] < asked[0], `second attempt should get less time: ${asked}`)
+  })
+
+  it("lets a route cap the time budget of a call", async () => {
+    // maxTotalMs 1ms leaves no room for a second attempt, so the first failure is final.
+    reply({}, 503)
+    await assert.rejects(
+      queryOpenAIStructured("s", "u", ProteinListSchema, "ProteinList", { maxTotalMs: 1 }),
+      (e: unknown) => e instanceof ExternalCallError && e.attempts === 1
+    )
   })
 
   it("validates enums with zod on the way back", async () => {

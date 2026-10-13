@@ -6,6 +6,14 @@ import {
 } from "@/lib/llm-schemas"
 import { webSearch, formatSearchResultsForPrompt } from "@/lib/exa"
 import { searchCompoundsForTarget } from "@/lib/pubchem"
+import {
+  errorPayload,
+  fetchWithRetry,
+  routeBudget,
+  toWarning,
+  type FailureWarning,
+} from "@/lib/retry"
+import type { OpenAICallOptions } from "@/lib/openai"
 import type { ReviewDrug } from "@/lib/types"
 import { shortenDrugName } from "@/lib/types"
 
@@ -48,11 +56,14 @@ async function searchPubmed(
     sort: "relevance",
     retmode: "json",
   })
-  const esearchRes = await fetch(
+  // NCBI answers 429 above its courtesy rate limit: retry. A failure after the
+  // retries throws ExternalCallError rather than returning [] (which would read
+  // as "no papers" and send the model an empty literature section).
+  const esearchRes = await fetchWithRetry(
     `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?${esearchParams.toString()}`,
-    { signal: AbortSignal.timeout(30000) }
+    {},
+    { source: "pubmed", timeoutMs: 30_000 }
   )
-  if (!esearchRes.ok) return []
   const esearchData = await esearchRes.json()
   const pmids: string[] = esearchData?.esearchresult?.idlist || []
   if (pmids.length === 0) return []
@@ -62,11 +73,11 @@ async function searchPubmed(
     id: pmids.join(","),
     retmode: "xml",
   })
-  const efetchRes = await fetch(
+  const efetchRes = await fetchWithRetry(
     `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?${efetchParams.toString()}`,
-    { signal: AbortSignal.timeout(30000) }
+    {},
+    { source: "pubmed", timeoutMs: 30_000 }
   )
-  if (!efetchRes.ok) return []
 
   const xml = await efetchRes.text()
   return parsePubmedXml(xml)
@@ -194,12 +205,16 @@ function buildRepurposingQuery(proteins: string[]): string {
 
 // ---------- Protein extraction ----------
 
-async function extractProteinsFromText(text: string): Promise<string[]> {
+async function extractProteinsFromText(
+  text: string,
+  options: OpenAICallOptions
+): Promise<string[]> {
   try {
     const result = await queryPromptStructured(
       "extraction/protein_list",
       { text },
-      ProteinListSchema
+      ProteinListSchema,
+      options
     )
     return cleanNames(result.proteins)
   } catch (error) {
@@ -222,7 +237,10 @@ function cleanNames(names: string[]): string[] {
  * sources rather than asking the LLM to recall from parametric memory
  * alone, and not a silently substituted, unrelated hardcoded list.
  */
-async function extractProteinsFallback(disease: string): Promise<string[]> {
+async function extractProteinsFallback(
+  disease: string,
+  options: OpenAICallOptions
+): Promise<string[]> {
   const searchResults = await webSearch(
     `protein targets implicated in ${disease} pathophysiology and treatment`,
     8
@@ -234,7 +252,8 @@ async function extractProteinsFallback(disease: string): Promise<string[]> {
     const result = await queryPromptStructured(
       "extraction/protein_list_fallback",
       { disease, search_results: searchResultsText },
-      ProteinListSchema
+      ProteinListSchema,
+      options
     )
     return cleanNames(result.proteins)
   } catch (error) {
@@ -248,7 +267,8 @@ async function extractProteinsFallback(disease: string): Promise<string[]> {
 
 async function discoverRepurposingCandidates(
   disease: string,
-  proteins: string[]
+  proteins: string[],
+  options: OpenAICallOptions
 ): Promise<string> {
   // Perplexity used to do its own web search here. OpenAI's chat completions
   // have no live browsing, so search Exa first and ground the write-up in
@@ -263,11 +283,15 @@ async function discoverRepurposingCandidates(
     ? formatSearchResultsForPrompt(searchResults)
     : "(No web search results found.)"
 
-  return queryPrompt("literature/repurposing_candidates", {
-    disease,
-    proteins: proteins.join(", "),
-    search_results: searchResultsText,
-  })
+  return queryPrompt(
+    "literature/repurposing_candidates",
+    {
+      disease,
+      proteins: proteins.join(", "),
+      search_results: searchResultsText,
+    },
+    options
+  )
 }
 
 // ---------- Drug-protein map extraction ----------
@@ -275,14 +299,22 @@ async function discoverRepurposingCandidates(
 async function extractDrugProteinMap(
   drugReviewText: string,
   disease: string,
-  proteins: string[]
-): Promise<{ drugs: ReviewDrug[]; disease: string; protein_targets: string[] }> {
+  proteins: string[],
+  options: OpenAICallOptions
+): Promise<{
+  drugs: ReviewDrug[]
+  disease: string
+  protein_targets: string[]
+  warning?: FailureWarning
+}> {
   let rawDrugs: DrugProteinMap["drugs"] = []
+  let warning: FailureWarning | undefined
   try {
     const data = await queryPromptStructured(
       "extraction/drug_protein_map",
       { disease, proteins: proteins.join(", "), review_text: drugReviewText },
-      DrugProteinMapSchema
+      DrugProteinMapSchema,
+      options
     )
     rawDrugs = data.drugs
   } catch (error) {
@@ -290,6 +322,11 @@ async function extractDrugProteinMap(
     // Keep the pipeline going with no literature-derived drugs (bioactive
     // compounds are still discovered per target), but make the gap visible.
     console.error("Drug map: unusable LLM output:", error.kind, error.message)
+    warning = {
+      source: "openai",
+      kind: error.kind,
+      message: `Drug-protein map unusable (${error.kind}); no literature-derived drugs`,
+    }
   }
 
   const drugs: ReviewDrug[] = rawDrugs.map((d) => ({
@@ -305,6 +342,7 @@ async function extractDrugProteinMap(
     drugs,
     disease,
     protein_targets: proteins,
+    warning,
   }
 }
 
@@ -329,6 +367,19 @@ export async function POST(req: Request) {
           )
         }
 
+        // Non-fatal failures (a step degraded, the review continued). Sent as
+        // "warning" events as they happen and repeated in "complete".
+        const warnings: FailureWarning[] = []
+        function warn(warning: FailureWarning) {
+          warnings.push(warning)
+          send({ type: "warning", warning })
+        }
+
+        // Every OpenAI call below shares one deadline, so retries across the
+        // whole review stay inside maxDuration.
+        const budget = routeBudget(285_000)
+        const callOptions = (): OpenAICallOptions => ({ maxTotalMs: budget() })
+
         try {
           // Step 1: Search PubMed
           send({ type: "progress", message: "Searching PubMed for relevant papers..." })
@@ -341,17 +392,17 @@ export async function POST(req: Request) {
           const firstReview = await queryPrompt("literature/review_first_pass", {
             disease,
             papers: diseasePapersText,
-          })
+          }, callOptions())
 
           // Step 3: Extract protein targets
           send({ type: "progress", message: "Extracting protein targets..." })
-          let proteins = await extractProteinsFromText(firstReview)
+          let proteins = await extractProteinsFromText(firstReview, callOptions())
           if (proteins.length === 0) {
             send({
               type: "progress",
               message: "Extraction from review text yielded nothing, retrying with a direct query...",
             })
-            proteins = await extractProteinsFallback(disease)
+            proteins = await extractProteinsFallback(disease, callOptions())
           }
           if (proteins.length === 0) {
             throw new Error(
@@ -364,12 +415,19 @@ export async function POST(req: Request) {
 
           // Step 4: Search PubMed for drug papers
           send({ type: "progress", message: "Searching for drug interaction papers..." })
-          const drugPapers = await searchPubmed(
-            buildDrugQuery(disease, proteins)
-          )
-          const repurposePapers = await searchPubmed(
-            buildRepurposingQuery(proteins)
-          )
+          // These two searches only enrich the drug section ("(No papers found.)" is
+          // handled below), so a PubMed failure after retries degrades them to empty,
+          // with a warning, instead of discarding the review work done so far.
+          const optionalSearch = async (query: string, what: string): Promise<PubmedPaper[]> => {
+            try {
+              return await searchPubmed(query)
+            } catch (error) {
+              warn(toWarning(error, what))
+              return []
+            }
+          }
+          const drugPapers = await optionalSearch(buildDrugQuery(disease, proteins), "drug papers")
+          const repurposePapers = await optionalSearch(buildRepurposingQuery(proteins), "repurposing papers")
 
           // Dedup
           const seenIds = new Set(drugPapers.map((p) => p.pmid))
@@ -392,13 +450,14 @@ export async function POST(req: Request) {
             disease,
             proteins: proteins.join(", "),
             papers: drugPapersText,
-          })
+          }, callOptions())
 
           // Step 6: Repurposing candidates
           send({ type: "progress", message: "Discovering repurposing candidates across therapeutic areas..." })
           const repurposingReview = await discoverRepurposingCandidates(
             disease,
-            proteins
+            proteins,
+            callOptions()
           )
 
           // Step 7: Assemble review markdown
@@ -416,7 +475,8 @@ export async function POST(req: Request) {
           // Step 8: Extract drug-protein map
           send({ type: "progress", message: "Extracting drug-protein interaction map..." })
           const combined = drugReview + "\n\n" + repurposingReview
-          const drugMap = await extractDrugProteinMap(combined, disease, proteins)
+          const drugMap = await extractDrugProteinMap(combined, disease, proteins, callOptions())
+          if (drugMap.warning) warn(drugMap.warning)
 
           // Step 9: Search PubChem for bioactive compounds targeting each protein
           send({ type: "progress", message: "Searching PubChem for bioactive compounds..." })
@@ -431,7 +491,10 @@ export async function POST(req: Request) {
 
           for (let i = 0; i < proteins.length; i++) {
             const r = bioactiveResults[i]
-            if (r.status !== "fulfilled") continue
+            if (r.status !== "fulfilled") {
+              warn(toWarning(r.reason, proteins[i]))
+              continue
+            }
             const protein = proteins[i]
             for (const c of r.value) {
               const name = shortenDrugName(c.iupacName, c.cid)
@@ -466,6 +529,7 @@ export async function POST(req: Request) {
             drugs: allDrugs,
             reviewMd,
             papersAnalyzed: diseasePapers.length + drugPapers.length,
+            warnings,
           })
         } catch (err) {
           send({
@@ -486,11 +550,10 @@ export async function POST(req: Request) {
       },
     })
   } catch (error) {
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    )
+    const { status, body } = errorPayload(error)
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 }

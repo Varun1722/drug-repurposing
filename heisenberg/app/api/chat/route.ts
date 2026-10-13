@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { queryPrompt } from "@/lib/openai"
+import { errorPayload } from "@/lib/retry"
 
 export const maxDuration = 60
 
@@ -47,14 +48,12 @@ export async function POST(req: Request) {
     const answer = await queryPrompt("chat/answer", {
       context_block: contextStr ? `Context:\n${contextStr}\n\n` : "",
       question,
-    })
+    }, { maxTotalMs: 50_000 })
 
     return NextResponse.json({ answer })
   } catch (error) {
     console.error("Chat API error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+    const { status, body } = errorPayload(error)
+    return NextResponse.json(body, { status })
   }
 }

@@ -21,10 +21,15 @@ from datetime import datetime
 
 import defusedxml.ElementTree as ET
 
-import requests
-
 from llm import LLMOutputError, query_prompt, query_prompt_structured
 from llm_schemas import DrugProteinMap, ProteinList
+from resilience import (
+    DEFAULT_POLICY,
+    call_with_retry,
+    request_with_retry,
+    response_json,
+    run_cli,
+)
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -61,8 +66,24 @@ def _ncbi_params(extra: dict) -> dict:
     return params
 
 
+def _ncbi_get(url: str, what: str) -> bytes:
+    """GET an E-utilities URL, retrying transient failures (NCBI answers 429
+    when the 3 req/s courtesy limit is exceeded).  Raises ``ExternalCallError``
+    (source ``pubmed``) when it still fails."""
+    def attempt() -> bytes:
+        with urllib.request.urlopen(url, timeout=30) as resp:
+            return resp.read()
+
+    # The label omits the URL: it carries the api_key.
+    return call_with_retry(attempt, source="pubmed", policy=DEFAULT_POLICY,
+                           label=what)
+
+
 def search_pubmed(query: str, max_results: int = PUBMED_MAX_RESULTS) -> list[dict]:
-    """Search PubMed and return a list of paper metadata dicts."""
+    """Search PubMed and return a list of paper metadata dicts.
+
+    Raises ``ExternalCallError`` if PubMed cannot be reached, rather than
+    returning an empty list that reads as "no papers"."""
     esearch_params = urllib.parse.urlencode(_ncbi_params({
         "db": "pubmed",
         "term": query,
@@ -73,8 +94,7 @@ def search_pubmed(query: str, max_results: int = PUBMED_MAX_RESULTS) -> list[dic
     esearch_url = f"{PUBMED_ESEARCH_URL}?{esearch_params}"
     print(f"[PubMed] Searching: {query!r}  (max {max_results} results)")
 
-    with urllib.request.urlopen(esearch_url, timeout=30) as resp:
-        esearch_data = json.loads(resp.read())
+    esearch_data = json.loads(_ncbi_get(esearch_url, "esearch"))
 
     pmids = esearch_data.get("esearchresult", {}).get("idlist", [])
     if not pmids:
@@ -88,8 +108,7 @@ def search_pubmed(query: str, max_results: int = PUBMED_MAX_RESULTS) -> list[dic
     }))
     efetch_url = f"{PUBMED_EFETCH_URL}?{efetch_params}"
 
-    with urllib.request.urlopen(efetch_url, timeout=30) as resp:
-        xml_data = resp.read()
+    xml_data = _ncbi_get(efetch_url, "efetch")
 
     papers = _parse_pubmed_xml(xml_data)
     print(f"[PubMed] Retrieved {len(papers)} papers with usable abstracts "
@@ -207,9 +226,9 @@ def web_search_exa(query: str, num_results: int = 12) -> list[dict]:
     }
 
     print(f"[Exa] Searching: {query!r}")
-    resp = requests.post(EXA_SEARCH_URL, json=payload, headers=headers, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    resp = request_with_retry("post", EXA_SEARCH_URL, source="exa",
+                              json=payload, headers=headers, timeout=30)
+    data = response_json(resp, "exa")
     results = [
         {
             "title": r.get("title", ""),
@@ -537,4 +556,4 @@ def _build_references(papers: list[dict]) -> str:
 
 
 if __name__ == "__main__":
-    main()
+    run_cli(main)

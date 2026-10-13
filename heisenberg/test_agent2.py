@@ -12,6 +12,7 @@ import pytest
 from rdkit import Chem
 
 import agent2
+from resilience import DEFAULT_POLICY, EscalationRequired, ExternalCallError
 
 
 # ---------------------------------------------------------------------------
@@ -127,17 +128,46 @@ class TestSearchPdb:
 
         assert results == []
 
-    def test_http_error_returns_empty(self):
-        with patch("agent2.requests.post", return_value=_mock_response(status_code=500)):
-            results = agent2.search_pdb("KRAS")
+    def test_no_content_means_no_matches(self):
+        """RCSB answers 204 (empty body) when nothing matches: a result, not a failure."""
+        with patch("agent2.requests.post", return_value=_mock_response(status_code=204)) as mock_post:
+            results = agent2.search_pdb("NONEXISTENT_PROTEIN")
 
         assert results == []
+        assert mock_post.call_count == 1
 
-    def test_network_exception_returns_empty(self):
-        with patch("agent2.requests.post", side_effect=ConnectionError("timeout")):
+    def test_persistent_http_error_raises_after_retries(self):
+        with patch("agent2.requests.post", return_value=_mock_response(status_code=500)) as mock_post:
+            with pytest.raises(ExternalCallError) as exc:
+                agent2.search_pdb("KRAS")
+
+        assert (exc.value.source, exc.value.kind) == ("rcsb", "server")
+        assert mock_post.call_count == DEFAULT_POLICY.max_attempts
+
+    def test_transient_error_is_retried(self):
+        ok = _mock_response(json_data={"result_set": [{"identifier": "6GJ8", "score": 1.0}]})
+        with patch("agent2.requests.post",
+                   side_effect=[_mock_response(status_code=503), ok]) as mock_post:
             results = agent2.search_pdb("KRAS")
 
-        assert results == []
+        assert results == [{"pdb_id": "6GJ8", "score": 1.0}]
+        assert mock_post.call_count == 2
+
+    def test_bad_request_is_not_retried(self):
+        with patch("agent2.requests.post", return_value=_mock_response(status_code=400)) as mock_post:
+            with pytest.raises(ExternalCallError) as exc:
+                agent2.search_pdb("KRAS")
+
+        assert exc.value.kind == "client"
+        assert mock_post.call_count == 1
+
+    def test_network_exception_raises_after_retries(self):
+        with patch("agent2.requests.post", side_effect=ConnectionError("down")) as mock_post:
+            with pytest.raises(ExternalCallError) as exc:
+                agent2.search_pdb("KRAS")
+
+        assert exc.value.kind == "connection"
+        assert mock_post.call_count == DEFAULT_POLICY.max_attempts
 
     def test_query_contains_protein_name(self):
         with patch("agent2.requests.post", return_value=_mock_response(json_data={"result_set": []})) as mock_post:
@@ -203,13 +233,28 @@ class TestGetPdbMetadata:
         assert meta["has_ligand"] is False
         assert meta["title"] == ""
 
-    def test_exception_returns_fallback(self):
-        with patch("agent2.requests.get", side_effect=ConnectionError("fail")):
-            meta = agent2.get_pdb_metadata("FAIL")
+    def test_null_fields_in_the_response_do_not_crash(self):
+        data = {"struct": None, "rcsb_entry_info": {"resolution_combined": None,
+                                                    "nonpolymer_entity_count": None}}
+        with patch("agent2.requests.get", return_value=_mock_response(json_data=data)):
+            meta = agent2.get_pdb_metadata("1ABC")
+        assert meta["resolution"] is None and meta["has_ligand"] is False and meta["title"] == ""
 
-        assert meta["pdb_id"] == "FAIL"
+        with patch("agent2.requests.get", return_value=_mock_response(json_data={"rcsb_entry_info": None})):
+            assert agent2.get_pdb_metadata("1ABC")["has_ligand"] is False
+
+    def test_unknown_entry_gets_empty_metadata(self):
+        with patch("agent2.requests.get", return_value=_mock_response(status_code=404)):
+            meta = agent2.get_pdb_metadata("NOPE")
+
+        assert meta["pdb_id"] == "NOPE"
         assert meta["resolution"] is None
         assert meta["has_ligand"] is False
+
+    def test_failure_raises_instead_of_claiming_no_ligand(self):
+        with patch("agent2.requests.get", side_effect=ConnectionError("fail")):
+            with pytest.raises(ExternalCallError):
+                agent2.get_pdb_metadata("FAIL")
 
 
 # ===================================================================
@@ -266,6 +311,25 @@ class TestPickBestStructure:
             best = agent2.pick_best_structure(candidates)
 
         assert best["pdb_id"] == "N"
+
+    def test_skips_candidates_whose_metadata_fails(self):
+        candidates = [{"pdb_id": "BAD"}, {"pdb_id": "GOOD"}]
+
+        def meta(pid):
+            if pid == "BAD":
+                raise ExternalCallError("rcsb", "server", "rcsb: server")
+            return {"pdb_id": pid, "title": "", "resolution": 2.0, "has_ligand": True, "nonpolymer_count": 1}
+
+        with patch("agent2.get_pdb_metadata", side_effect=meta):
+            best = agent2.pick_best_structure(candidates)
+
+        assert best["pdb_id"] == "GOOD"
+
+    def test_raises_when_no_candidate_can_be_judged(self):
+        err = ExternalCallError("rcsb", "server", "rcsb: server")
+        with patch("agent2.get_pdb_metadata", side_effect=err):
+            with pytest.raises(ExternalCallError):
+                agent2.pick_best_structure([{"pdb_id": "A"}, {"pdb_id": "B"}])
 
     def test_only_checks_first_ten(self):
         candidates = [{"pdb_id": str(i)} for i in range(15)]
@@ -333,6 +397,21 @@ class TestDownloadPdb:
         mock_structure.write_pdb.assert_called_once_with(pdb_path)
         mock_remove.assert_called_once_with(str(tmp_path / "9E3S.cif"))
 
+    def test_missing_in_both_formats_raises_not_found(self, tmp_path):
+        with patch("agent2.requests.get", return_value=_mock_response(status_code=404)):
+            with pytest.raises(ExternalCallError) as exc:
+                agent2.download_pdb("0000", str(tmp_path))
+
+        assert exc.value.kind == "not_found"
+
+    def test_server_error_raises_after_retries(self, tmp_path):
+        with patch("agent2.requests.get", return_value=_mock_response(status_code=502)) as mock_get:
+            with pytest.raises(ExternalCallError) as exc:
+                agent2.download_pdb("6GJ8", str(tmp_path))
+
+        assert exc.value.kind == "server"
+        assert mock_get.call_count == DEFAULT_POLICY.max_attempts
+
     def test_creates_output_directory(self, tmp_path):
         nested = tmp_path / "deep" / "structures"
         pdb_content = b"HEADER\nEND\n"
@@ -378,11 +457,28 @@ class TestLookupSmiles:
 
         assert result is None
 
-    def test_exception_returns_none(self):
-        with patch("agent2.requests.get", side_effect=ConnectionError("fail")):
-            result = agent2.lookup_smiles("temozolomide")
+    def test_empty_property_list_is_handled(self):
+        """A 200 with Properties: [] used to be swallowed by a blanket except; it must not crash."""
+        with patch("agent2.requests.get",
+                   return_value=_mock_response(json_data={"PropertyTable": {"Properties": []}})):
+            result = agent2.lookup_smiles("something")
+        assert result is not None and result["smiles"] == ""
 
-        assert result is None
+    def test_unparseable_name_is_not_found_not_an_outage(self):
+        """PubChem answers 400 for names it cannot parse; that must not count as a failure."""
+        with patch("agent2.requests.get", return_value=_mock_response(status_code=400)) as mock_get:
+            assert agent2.lookup_smiles("N/A (see text)") is None
+
+        assert mock_get.call_count == 3     # the name and its two alias parts, one try each
+
+    def test_failure_raises_and_does_not_try_aliases(self):
+        """A PubChem outage is not "not found", and trying aliases against it is pointless."""
+        with patch("agent2.requests.get", return_value=_mock_response(status_code=503)) as mock_get:
+            with pytest.raises(ExternalCallError) as exc:
+                agent2.lookup_smiles("daraxonrasib (RMC-6236)")
+
+        assert exc.value.source == "pubchem"
+        assert mock_get.call_count == DEFAULT_POLICY.max_attempts  # one name, retried
 
     def test_empty_properties_graceful(self):
         json_data = {"PropertyTable": {"Properties": [{}]}}
@@ -547,13 +643,44 @@ class TestSearchCompoundsForTarget:
         assert "KRAS" in first_url
         assert "G12D" not in first_url
 
-    def test_batch_property_fetch_failure_graceful(self):
+    def test_property_fetch_failure_raises(self):
         assay_resp = self._assay_response([100, 200])
 
-        with patch("agent2.requests.get", side_effect=[assay_resp, ConnectionError("fail")]):
-            compounds = agent2.search_compounds_for_target("KRAS")
+        def get(url, **kwargs):
+            if "/assay/target/" in url:
+                return assay_resp
+            raise ConnectionError("fail")
 
-        assert compounds == []  # property fetch failed, no compounds returned
+        with patch("agent2.requests.get", side_effect=get):
+            with pytest.raises(ExternalCallError):
+                agent2.search_compounds_for_target("KRAS")
+
+    def test_assay_failure_falls_back_to_gene_symbol(self):
+        gene_resp = self._assay_response([300])
+        prop_resp = self._property_response([
+            {"CID": 300, "CanonicalSMILES": "C(=O)O", "IUPACName": "formic acid", "MolecularFormula": "CH2O2"},
+        ])
+
+        def get(url, **kwargs):
+            if "/assay/target/" in url:
+                return _mock_response(status_code=503)
+            return gene_resp if "/gene/symbol/" in url else prop_resp
+
+        with patch("agent2.requests.get", side_effect=get):
+            compounds = agent2.search_compounds_for_target("MGMT")
+
+        assert [c["cid"] for c in compounds] == [300]
+
+    def test_failed_search_with_nothing_found_raises_not_empty(self):
+        """If a lookup failed and the other found nothing, [] would hide the outage."""
+        def get(url, **kwargs):
+            if "/assay/target/" in url:
+                return _mock_response(status_code=503)
+            return _mock_response(status_code=404)
+
+        with patch("agent2.requests.get", side_effect=get):
+            with pytest.raises(ExternalCallError):
+                agent2.search_compounds_for_target("MGMT")
 
     def test_reads_connectivity_smiles_in_batch(self):
         """Batch property fetch handles ConnectivitySMILES key from PubChem."""
@@ -567,6 +694,42 @@ class TestSearchCompoundsForTarget:
 
         assert len(compounds) == 1
         assert compounds[0]["smiles"] == "CCO"
+
+
+# ===================================================================
+# search_3d_similar
+# ===================================================================
+
+class TestSearch3dSimilar:
+    def test_returns_similar_compounds_without_the_query(self):
+        ids = _mock_response(json_data={"IdentifierList": {"CID": [1, 2, 3]}})
+        props = _mock_response(json_data={"PropertyTable": {"Properties": [
+            {"CID": 2, "CanonicalSMILES": "CCO", "IUPACName": "ethanol", "MolecularFormula": "C2H6O"},
+        ]}})
+        with patch("agent2.requests.get", side_effect=[ids, props]) as mock_get:
+            result = agent2.search_3d_similar(1)
+
+        assert [c["cid"] for c in result] == [2]
+        assert "1,2,3" not in mock_get.call_args_list[1].args[0]  # self-hit removed
+
+    def test_no_conformer_is_empty_not_an_error(self):
+        with patch("agent2.requests.get", return_value=_mock_response(status_code=404)):
+            assert agent2.search_3d_similar(1) == []
+
+    def test_failure_raises(self):
+        with patch("agent2.requests.get", return_value=_mock_response(status_code=500)):
+            with pytest.raises(ExternalCallError):
+                agent2.search_3d_similar(1)
+
+    def test_property_fetch_failure_raises(self):
+        ids = _mock_response(json_data={"IdentifierList": {"CID": [2]}})
+
+        def get(url, **kwargs):
+            return ids if "fastsimilarity_3d" in url else _mock_response(status_code=500)
+
+        with patch("agent2.requests.get", side_effect=get):
+            with pytest.raises(ExternalCallError):
+                agent2.search_3d_similar(1)
 
 
 # ===================================================================
@@ -670,6 +833,77 @@ class TestMain:
         for lig in target["ligands"]:
             assert lig["smiles"] != ""
             assert "source" in lig
+
+    def _routed_get(self, routes):
+        """A requests.get fake that answers by URL substring (order-independent)."""
+        def get(url, **kwargs):
+            for needle, resp in routes.items():
+                if needle in url:
+                    return resp
+            raise AssertionError(f"unexpected GET {url}")
+        return get
+
+    def test_failed_lookup_is_recorded_and_the_run_continues(self, tmp_path, monkeypatch):
+        data = {
+            "disease": "glioblastoma",
+            "protein_targets": ["MGMT"],
+            "drugs": [
+                {"drug": "flaky", "proteins": ["MGMT"], "mechanism": "m", "fda_status": "A"},
+                {"drug": "fine", "proteins": ["MGMT"], "mechanism": "m", "fda_status": "A"},
+            ],
+        }
+        input_path = tmp_path / "in.json"
+        input_path.write_text(json.dumps(data))
+        output_path = str(tmp_path / "out.json")
+        monkeypatch.setattr("sys.argv", ["agent2.py", "-i", str(input_path), "-o", output_path,
+                                         "--structures-dir", str(tmp_path / "s")])
+
+        fine = _mock_response(json_data={"PropertyTable": {"Properties": [
+            {"CID": 7, "CanonicalSMILES": "CCO", "IUPACName": "fine", "MolecularFormula": "C2H6O"}]}})
+        get = self._routed_get({
+            "/entry/": _mock_response(json_data={"rcsb_entry_info": {
+                "resolution_combined": [2.0], "nonpolymer_entity_count": 1}}),
+            "files.rcsb.org": _mock_response(content=b"HEADER\nEND\n"),
+            "name/flaky": _mock_response(status_code=503),
+            "name/fine": fine,
+            "/assay/target/": _mock_response(json_data={"InformationList": {"Information": []}}),
+            "/gene/symbol/": _mock_response(status_code=404),
+        })
+        search = _mock_response(json_data={"result_set": [{"identifier": "1EH4", "score": 1.0}]})
+        with patch("agent2.requests.post", return_value=search), \
+             patch("agent2.requests.get", side_effect=get):
+            agent2.main()
+
+        output = json.load(open(output_path))
+        assert [l["name"] for l in output["targets"][0]["ligands"]] == ["fine"]
+        assert len(output["errors"]) == 1
+        err = output["errors"][0]
+        assert (err["source"], err["kind"], err["target"]) == ("pubchem", "server", "MGMT/flaky")
+
+    def test_three_consecutive_pubchem_failures_stop_the_run(self, tmp_path, monkeypatch):
+        data = {
+            "disease": "d",
+            "protein_targets": ["MGMT"],
+            "drugs": [{"drug": f"d{i}", "proteins": ["MGMT"], "mechanism": "m",
+                       "fda_status": "A"} for i in range(5)],
+        }
+        input_path = tmp_path / "in.json"
+        input_path.write_text(json.dumps(data))
+        output_path = tmp_path / "out.json"
+        monkeypatch.setattr("sys.argv", ["agent2.py", "-i", str(input_path), "-o", str(output_path),
+                                         "--structures-dir", str(tmp_path / "s")])
+
+        get = self._routed_get({"name/": _mock_response(status_code=503)})
+        with patch("agent2.requests.post",
+                   return_value=_mock_response(json_data={"result_set": []})), \
+             patch("agent2.requests.get", side_effect=get) as mock_get:
+            with pytest.raises(SystemExit) as exc:
+                agent2.main()
+
+        assert exc.value.code == 1
+        assert not output_path.exists()  # no partial output for the next stage to trust
+        # stopped after the 3rd failed drug (3 drugs x max_attempts), not all 5
+        assert mock_get.call_count == 3 * DEFAULT_POLICY.max_attempts
 
     def test_missing_input_file(self, tmp_path, monkeypatch):
         monkeypatch.setattr(

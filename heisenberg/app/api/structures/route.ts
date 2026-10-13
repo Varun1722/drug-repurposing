@@ -1,5 +1,6 @@
 import { searchPdb, pickBestStructure, downloadPdb } from "@/lib/pdb"
 import { lookupSmiles } from "@/lib/pubchem"
+import { errorPayload, toWarning, type FailureWarning } from "@/lib/retry"
 import type { ReviewDrug, DockingTarget, Ligand } from "@/lib/types"
 
 export const maxDuration = 120
@@ -28,6 +29,15 @@ export async function POST(req: Request) {
         }
 
         const targets: DockingTarget[] = []
+        // External calls that failed even after retries. Each is sent as a
+        // "warning" event as it happens, and all are repeated in "complete", so
+        // the UI can tell "PubChem failed for these" from "PubChem has nothing".
+        const warnings: FailureWarning[] = []
+        function warn(error: unknown, target: string) {
+          const warning = toWarning(error, target)
+          warnings.push(warning)
+          send({ type: "warning", warning })
+        }
 
         try {
           send({
@@ -44,27 +54,32 @@ export async function POST(req: Request) {
                 message: `Searching PDB for ${protein}... (${pi + 1}/${proteins.length})`,
               })
 
-              let candidates = await searchPdb(protein)
-              if (candidates.length === 0) {
-                const gene = protein.split(/\s+/)[0]
-                if (gene !== protein) {
-                  candidates = await searchPdb(gene)
-                }
-              }
-
               let pdbId: string | null = null
               let pdbContentB64: string | null = null
 
-              if (candidates.length > 0) {
-                const best = await pickBestStructure(candidates)
-                if (best) {
-                  pdbId = best.pdbId
-                  send({
-                    type: "progress",
-                    message: `Downloading PDB structure ${best.pdbId} for ${protein}...`,
-                  })
-                  pdbContentB64 = await downloadPdb(best.pdbId)
+              // A failure here costs this protein its structure, not the whole run.
+              try {
+                let candidates = await searchPdb(protein)
+                if (candidates.length === 0) {
+                  const gene = protein.split(/\s+/)[0]
+                  if (gene !== protein) {
+                    candidates = await searchPdb(gene)
+                  }
                 }
+
+                if (candidates.length > 0) {
+                  const best = await pickBestStructure(candidates)
+                  if (best) {
+                    pdbId = best.pdbId
+                    send({
+                      type: "progress",
+                      message: `Downloading PDB structure ${best.pdbId} for ${protein}...`,
+                    })
+                    pdbContentB64 = await downloadPdb(best.pdbId)
+                  }
+                }
+              } catch (error) {
+                warn(error, protein)
               }
 
               return { pdbId, pdbContentB64 }
@@ -95,8 +110,14 @@ export async function POST(req: Request) {
                 })
               )
 
-              for (const r of lookupResults) {
-                if (r.status !== "fulfilled") continue
+              for (let i = 0; i < lookupResults.length; i++) {
+                const r = lookupResults[i]
+                if (r.status !== "fulfilled") {
+                  // The lookup failed (not "no such compound"): leave the drug
+                  // out, but say so.
+                  warn(r.reason, `${protein}/${drugsForProtein[i].drug}`)
+                  continue
+                }
                 const { drugInfo, result } = r.value
                 const smiles = result?.smiles || ""
                 if (smiles) {
@@ -144,15 +165,19 @@ export async function POST(req: Request) {
           })
 
           const results = await Promise.allSettled(proteinPromises)
-          for (const r of results) {
+          for (let i = 0; i < results.length; i++) {
+            const r = results[i]
             if (r.status === "fulfilled") {
               targets.push(r.value)
+            } else {
+              warn(r.reason, proteins[i])
             }
           }
 
           send({
             type: "complete",
             targets,
+            warnings,
           })
         } catch (err) {
           send({
@@ -173,11 +198,10 @@ export async function POST(req: Request) {
       },
     })
   } catch (error) {
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    )
+    const { status, body } = errorPayload(error)
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 }

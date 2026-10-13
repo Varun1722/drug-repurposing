@@ -1,6 +1,8 @@
 // Exa web search client — replaces Perplexity's built-in web search for
 // steps that need live grounding (e.g. broad repurposing-candidate discovery).
 
+import { fetchWithRetry, responseJson } from "./retry"
+
 const EXA_SEARCH_URL = "https://api.exa.ai/search"
 
 export interface ExaSearchResult {
@@ -16,28 +18,28 @@ export async function webSearch(
   const apiKey = process.env.EXA_API_KEY
   if (!apiKey) throw new Error("EXA_API_KEY not set")
 
-  const res = await fetch(EXA_SEARCH_URL, {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "Content-Type": "application/json",
+  // A search has no side effects, so repeating it is safe. Throws
+  // ExternalCallError if Exa still fails after the retries.
+  const res = await fetchWithRetry(
+    EXA_SEARCH_URL,
+    {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        type: "auto",
+        numResults,
+        contents: { text: { maxCharacters: 1500 } },
+      }),
     },
-    body: JSON.stringify({
-      query,
-      type: "auto",
-      numResults,
-      contents: { text: { maxCharacters: 1500 } },
-    }),
-    signal: AbortSignal.timeout(30000),
-  })
+    { source: "exa", timeoutMs: 30_000 }
+  )
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Exa API error ${res.status}: ${text}`)
-  }
-
-  const data = await res.json()
-  return ((data.results as Record<string, unknown>[]) || []).map((r) => ({
+  const data = await responseJson<{ results?: Record<string, unknown>[] }>(res, "exa")
+  return (data.results || []).map((r) => ({
     title: (r.title as string) || "",
     url: (r.url as string) || "",
     text: (r.text as string) || "",
