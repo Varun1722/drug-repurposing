@@ -16,12 +16,17 @@ import os
 import sys
 from typing import Type
 
-import requests
 from dotenv import load_dotenv
 from pydantic import BaseModel, ValidationError
 
 from llm_schemas import to_strict_json_schema
 from prompt_loader import PromptError, render_prompt
+from resilience import (
+    OPENAI_POLICY,
+    ExternalCallError,
+    compact_error,
+    request_with_retry,
+)
 
 load_dotenv()
 
@@ -33,7 +38,12 @@ OPENAI_TIMEOUT_SECONDS = 180
 
 def _post_chat_completion(system_prompt: str, user_prompt: str, **extra) -> dict:
     """POST one chat completion and return the first choice
-    (``{"message": {...}, "finish_reason": ...}``)."""
+    (``{"message": {...}, "finish_reason": ...}``).
+
+    Transient failures (429/5xx, timeouts, dropped connections) are retried
+    with backoff; a failure that survives the retries raises
+    ``ExternalCallError(source="openai")``.  Retrying here is safe because a
+    chat completion has no side effects."""
     if not OPENAI_API_KEY:
         print("ERROR: OPENAI_API_KEY environment variable is not set.",
               file=sys.stderr)
@@ -56,10 +66,17 @@ def _post_chat_completion(system_prompt: str, user_prompt: str, **extra) -> dict
     }
 
     print("[OpenAI] Sending request …")
-    resp = requests.post(OPENAI_URL, json=payload, headers=headers,
-                         timeout=OPENAI_TIMEOUT_SECONDS)
-    resp.raise_for_status()
-    return resp.json()["choices"][0]
+    resp = request_with_retry("post", OPENAI_URL, source="openai",
+                              json=payload, headers=headers,
+                              timeout=OPENAI_TIMEOUT_SECONDS,
+                              policy=OPENAI_POLICY)
+    try:
+        return resp.json()["choices"][0]
+    except (ValueError, KeyError, IndexError, TypeError) as exc:
+        raise ExternalCallError(
+            "openai", "bad_response",
+            "openai: response had no choices[0]",
+        ) from exc
 
 
 def query_openai(system_prompt: str, user_prompt: str) -> str:
@@ -79,12 +96,20 @@ class LLMOutputError(Exception):
     content-filtered, or returned values that fail our own pydantic
     validation.  Callers choose the fallback; ``kind`` is one of ``refusal``,
     ``truncated``, ``content_filter``, ``empty``, ``invalid_json`` or
-    ``schema_mismatch``.
+    ``schema_mismatch``.  ``attempts`` is how many replies were tried.
     """
 
-    def __init__(self, kind: str, message: str):
+    def __init__(self, kind: str, message: str, attempts: int = 1):
         super().__init__(message)
         self.kind = kind
+        self.attempts = attempts
+
+
+# Kinds where asking again can help: the reply was empty or malformed, which a
+# fresh sample usually fixes.  A refusal, a content-filter stop or a truncated
+# reply would just come back the same way.
+_REPAIRABLE = frozenset({"empty", "invalid_json", "schema_mismatch"})
+MAX_OUTPUT_ATTEMPTS = 2
 
 
 def query_openai_structured(system_prompt: str, user_prompt: str,
@@ -93,10 +118,33 @@ def query_openai_structured(system_prompt: str, user_prompt: str,
     ``response_format: json_schema`` (strict).  Returns a validated
     ``model_cls`` instance.
 
-    Raises ``LLMOutputError`` for a refusal, truncated/filtered/empty reply, or
-    a reply that fails validation.  HTTP/network failures raise the usual
-    ``requests`` exceptions.
+    An empty or malformed reply is retried once, with a one-line description of
+    what was wrong appended to the prompt so the model can correct it.
+
+    Raises ``LLMOutputError`` for a refusal, a truncated/filtered reply, or a
+    reply that is still unusable after the second try; ``ExternalCallError``
+    when the API itself could not be reached (after retries).
     """
+    prompt = user_prompt
+    for attempt in range(1, MAX_OUTPUT_ATTEMPTS + 1):
+        try:
+            return _structured_once(system_prompt, prompt, model_cls)
+        except LLMOutputError as e:
+            e.attempts = attempt
+            if e.kind not in _REPAIRABLE or attempt == MAX_OUTPUT_ATTEMPTS:
+                raise
+            print(f"[OpenAI] Reply unusable ({e.kind}); asking again.",
+                  file=sys.stderr)
+            prompt = (
+                f"{user_prompt}\n\nYour previous reply was rejected: "
+                f"{compact_error(str(e), 300)}\nReply again with JSON that satisfies "
+                f"the schema."
+            )
+    raise AssertionError("unreachable")  # the loop always returns or raises
+
+
+def _structured_once(system_prompt: str, user_prompt: str,
+                     model_cls: Type[BaseModel]) -> BaseModel:
     choice = _post_chat_completion(
         system_prompt,
         user_prompt,

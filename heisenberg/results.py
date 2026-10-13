@@ -15,6 +15,7 @@ import sys
 from datetime import datetime
 
 from llm import query_prompt
+from resilience import run_cli
 
 def _strip_leading_header(text: str) -> str:
     """Remove a leading Markdown header (e.g. '## Methodology\\n') that
@@ -325,4 +326,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_cli(main)

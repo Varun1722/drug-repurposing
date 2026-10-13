@@ -4,6 +4,7 @@ import { DrugNameListSchema } from "@/lib/llm-schemas"
 import { lookupSmiles, search3dSimilar } from "@/lib/pubchem"
 import type { ReasoningDecision, DockingTarget, DockingResult, Ligand } from "@/lib/types"
 import { shortenDrugName } from "@/lib/types"
+import { errorPayload, toWarning, type FailureWarning } from "@/lib/retry"
 
 export const maxDuration = 120
 
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
     }
 
     const newLigandsByProtein: Record<string, Ligand[]> = {}
+    // PubChem calls that failed (after retries). An empty result with warnings
+    // means "the search failed", not "nothing similar exists"; the UI says which.
+    const warnings: FailureWarning[] = []
 
     if (decision.action === "expand_3d_similar") {
       let seedCids = decision.seedCids || []
@@ -55,7 +59,10 @@ export async function POST(req: Request) {
 
       for (let i = 0; i < seedCids.length; i++) {
         const r = similarResults[i]
-        if (r.status !== "fulfilled") continue
+        if (r.status !== "fulfilled") {
+          warnings.push(toWarning(r.reason, `CID ${seedCids[i]}`))
+          continue
+        }
         const cid = seedCids[i]
         for (const c of r.value) {
           if (!c.smiles) continue
@@ -89,14 +96,16 @@ export async function POST(req: Request) {
                   .map((r) => r.name)
                   .join(", ") || "(none)",
             },
-            DrugNameListSchema
+            DrugNameListSchema,
+            { maxTotalMs: 100_000 }
           )
           drugNames = parsed.drug_names
         } catch (error) {
           if (!(error instanceof LLMOutputError)) throw error
           // No names -> no new ligands -> the route returns an empty
-          // newTargets list, which the UI already treats as "nothing found".
+          // newTargets list; the warning tells the UI why.
           console.error("Expand: unusable LLM output:", error.kind, error.message)
+          warnings.push({ source: "openai", kind: error.kind, message: `Drug-name reply unusable: ${error.message}` })
         }
       }
 
@@ -108,8 +117,12 @@ export async function POST(req: Request) {
         })
       )
 
-      for (const r of lookupResults) {
-        if (r.status !== "fulfilled") continue
+      for (let i = 0; i < lookupResults.length; i++) {
+        const r = lookupResults[i]
+        if (r.status !== "fulfilled") {
+          warnings.push(toWarning(r.reason, drugNames[i]))
+          continue
+        }
         const { drugName, result } = r.value
         if (!result?.smiles) continue
 
@@ -153,12 +166,10 @@ export async function POST(req: Request) {
       })
     }
 
-    return NextResponse.json({ newTargets })
+    return NextResponse.json({ newTargets, warnings })
   } catch (error) {
     console.error("Expand API error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+    const { status, body } = errorPayload(error)
+    return NextResponse.json(body, { status })
   }
 }

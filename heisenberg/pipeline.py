@@ -48,6 +48,15 @@ from review import (
     _build_references,
 )
 from llm_schemas import DrugNameList, ReasoningDecision
+from resilience import (
+    EscalationRequired,
+    ExternalCallError,
+    FailureGuard,
+    compact_error,
+    record_error,
+    record_exception,
+    summarize_errors,
+)
 from agent2 import (
     search_pdb,
     pick_best_structure,
@@ -114,6 +123,9 @@ def new_state(disease: str) -> dict:
         "review_md": "",
         "results_md": "",
         "final_paper_md": "",
+        # Failed external calls and other degradations (see resilience.record_error).
+        # Non-fatal ones are listed in the report; a fatal one stopped the run.
+        "errors": [],
         "started_at": datetime.now().isoformat(),
     }
 
@@ -131,7 +143,29 @@ def save_state(state: dict):
 def load_state() -> dict:
     """Load pipeline state from disk."""
     with open(STATE_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        state = json.load(f)
+    state.setdefault("errors", [])   # state files from before error recording
+    return state
+
+
+def _forget_stale_errors(state: dict, stages: set) -> None:
+    """On resume, drop the non-fatal errors of stages that are about to run
+    again: they described a failed attempt and would otherwise still be listed
+    as missing data after a successful re-run.  Fatal entries are kept as history."""
+    state["errors"] = [e for e in state.get("errors", [])
+                       if e.get("fatal") or e.get("stage") not in stages]
+
+
+def _run_stage(state: dict, name: str, fn, *args, **kwargs):
+    """Run one pipeline stage.  If it fails, record the failure in the state
+    and save it (status stays at the last completed stage, so ``--resume``
+    re-runs this one) before re-raising."""
+    try:
+        return fn(state, *args, **kwargs)
+    except Exception as exc:
+        record_exception(state, stage=name, exc=exc, fatal=True)
+        save_state(state)
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -174,9 +208,23 @@ def stage_literature(state: dict) -> dict:
     # Search for drug papers
     time.sleep(0.5)
     print(">> Searching PubMed for drug papers …")
-    drug_papers = search_pubmed(build_drug_query(disease, proteins))
+
+    def optional_search(query: str, what: str) -> list:
+        # These two searches only enrich the drug section ("(No papers found.)" is
+        # handled below), so a PubMed failure after retries degrades them to empty,
+        # recorded in state, instead of discarding the review work done so far.
+        try:
+            return search_pubmed(query)
+        except ExternalCallError as e:
+            print(f"  WARNING: PubMed search for {what} failed: {compact_error(e)}",
+                  file=sys.stderr)
+            record_exception(state, stage="literature", exc=e, target=what)
+            return []
+
+    drug_papers = optional_search(build_drug_query(disease, proteins), "drug papers")
     time.sleep(0.5)
-    repurpose_papers = search_pubmed(build_repurposing_query(proteins))
+    repurpose_papers = optional_search(build_repurposing_query(proteins),
+                                       "repurposing papers")
 
     # Dedup
     seen_ids = {p["pmid"] for p in drug_papers}
@@ -223,6 +271,10 @@ def stage_literature(state: dict) -> dict:
 
     with open("review.json", "w", encoding="utf-8") as f:
         json.dump(drug_map, f, indent=2, ensure_ascii=False)
+    if "llm_error" in drug_map:
+        record_error(state, stage="literature", source="openai",
+                     kind=drug_map["llm_error"]["kind"],
+                     message=f"Drug-protein map unusable: {drug_map['llm_error']['message']}")
 
     # Update state
     state["protein_targets"] = proteins
@@ -238,6 +290,28 @@ def stage_literature(state: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Stage 2: Structure retrieval
 # ---------------------------------------------------------------------------
+
+def _attempt(state: dict, guard: FailureGuard, stage: str, what: str,
+             target: str, fn, *args, default=None):
+    """Run one external step.  Returns ``fn(*args)``.
+
+    "Nothing found" is a normal return value and resets ``guard``.  On
+    ``ExternalCallError`` the failure is recorded in ``state["errors"]`` and
+    counted against ``guard``, which raises ``EscalationRequired`` after
+    repeated failures to the same source; otherwise ``default`` is returned
+    and the stage carries on without that one item.
+    """
+    try:
+        value = fn(*args)
+    except ExternalCallError as e:
+        print(f"  WARNING: {what} failed for {target}: {compact_error(e)}",
+              file=sys.stderr)
+        record_exception(state, stage=stage, exc=e, target=target)
+        guard.failed(e)
+        return default
+    guard.ok()
+    return value
+
 
 def stage_structure(state: dict, extra_ligands: dict | None = None) -> dict:
     """Retrieve PDB structures and drug SMILES.
@@ -255,6 +329,8 @@ def stage_structure(state: dict, extra_ligands: dict | None = None) -> dict:
     print(f"{'='*60}\n")
 
     targets = []
+    rcsb_guard = FailureGuard("rcsb")
+    pubchem_guard = FailureGuard("pubchem")
 
     for protein in proteins:
         print(f"\n{'─'*40}")
@@ -262,19 +338,23 @@ def stage_structure(state: dict, extra_ligands: dict | None = None) -> dict:
         print(f"{'─'*40}\n")
 
         # Search PDB
-        candidates = search_pdb(protein)
+        candidates = _attempt(state, rcsb_guard, "structure", "PDB search",
+                              protein, search_pdb, protein, default=[])
         if not candidates:
             gene = protein.split()[0]
             if gene != protein:
-                candidates = search_pdb(gene)
+                candidates = _attempt(state, rcsb_guard, "structure", "PDB search",
+                                      protein, search_pdb, gene, default=[])
 
         pdb_id = None
         pdb_file = None
         if candidates:
-            best = pick_best_structure(candidates)
+            best = _attempt(state, rcsb_guard, "structure", "PDB metadata",
+                            protein, pick_best_structure, candidates)
             if best:
                 pdb_id = best["pdb_id"]
-                pdb_file = download_pdb(pdb_id, STRUCTURES_DIR)
+                pdb_file = _attempt(state, rcsb_guard, "structure", "PDB download",
+                                    protein, download_pdb, pdb_id, STRUCTURES_DIR)
 
         # Look up SMILES for known drugs
         ligands = []
@@ -283,7 +363,8 @@ def stage_structure(state: dict, extra_ligands: dict | None = None) -> dict:
                 continue
             drug_name = drug_info["drug"]
             time.sleep(PUBCHEM_DELAY)
-            result = lookup_smiles(drug_name)
+            result = _attempt(state, pubchem_guard, "structure", "SMILES lookup",
+                              f"{protein}/{drug_name}", lookup_smiles, drug_name)
             ligands.append({
                 "name": drug_name,
                 "smiles": result["smiles"] if result else "",
@@ -293,7 +374,9 @@ def stage_structure(state: dict, extra_ligands: dict | None = None) -> dict:
             })
 
         # Discover bioactive compounds
-        extra = search_compounds_for_target(protein, max_compounds=50)
+        extra = _attempt(state, pubchem_guard, "structure", "compound search",
+                         protein, search_compounds_for_target, protein, 50,
+                         default=[])
         existing_smiles = {l["smiles"] for l in ligands if l["smiles"]}
         for c in extra:
             if c["smiles"] and c["smiles"] not in existing_smiles:
@@ -358,6 +441,9 @@ def stage_docking(state: dict, targets_to_dock: list[dict] | None = None) -> dic
 
         if not pdb_file or not os.path.exists(pdb_file):
             print(f"  WARNING: No PDB file for {protein}, skipping")
+            record_error(state, stage="docking", source="pipeline",
+                         kind="skipped_no_structure", target=protein,
+                         message=f"{protein} was not docked: no structure file")
             continue
 
         dock_ligands = [
@@ -367,13 +453,27 @@ def stage_docking(state: dict, targets_to_dock: list[dict] | None = None) -> dic
 
         if not dock_ligands:
             print(f"  WARNING: No ligands for {protein}, skipping")
+            record_error(state, stage="docking", source="pipeline",
+                         kind="skipped_no_ligands", target=protein,
+                         message=f"{protein} was not docked: no ligands with a SMILES")
             continue
 
         print(f"\n  Docking {len(dock_ligands)} ligands against {protein} …")
-        results, elapsed = run_docking(
-            protein_pdb_path=pdb_file,
-            ligands=dock_ligands,
-        )
+        dock_errors: list = []
+        try:
+            results, elapsed = run_docking(
+                protein_pdb_path=pdb_file,
+                ligands=dock_ligands,
+                errors=dock_errors,
+            )
+        except ExternalCallError as e:
+            # Every chunk failed: keep going with the other targets.
+            print(f"  WARNING: docking {protein} failed: {compact_error(e)}",
+                  file=sys.stderr)
+            record_exception(state, stage="docking", exc=e, target=protein)
+            continue
+        for d in dock_errors:
+            record_error(state, stage="docking", source="gnina", target=protein, **d)
 
         # Merge metadata back
         ligand_meta = {l["name"]: l for l in ligands}
@@ -391,6 +491,17 @@ def stage_docking(state: dict, targets_to_dock: list[dict] | None = None) -> dic
         print(f"  Top 5 for {protein}:")
         for i, r in enumerate(results[:5]):
             print(f"    {i+1}. {r['name'][:40]:40s} score={r['confidence_score']:.4f}")
+
+    if not round_results:
+        # Round 1 with nothing docked means no data to reason about or write up:
+        # stop (state is saved by _run_stage) instead of producing an empty paper.
+        # A later expansion round that adds nothing is merely recorded.
+        message = (f"Round {round_num} docked no ligands; see the docking errors "
+                   f"recorded in {STATE_FILE}.")
+        if round_num <= 1:
+            raise ExternalCallError("gnina", "no_results", message)
+        record_error(state, stage="docking", source="gnina", kind="no_results",
+                     message=message)
 
     state["all_docking_results"].extend(round_results)
     state["status"] = f"docking_round_{round_num}_complete"
@@ -490,6 +601,8 @@ def analyze_and_decide(state: dict) -> dict:
         # Don't expand on a guess; say why in the rationale so it lands in
         # expansion_history and the report instead of vanishing.
         print(f"  WARNING: reasoning reply unusable ({e.kind}): {e}", file=sys.stderr)
+        record_error(state, stage="reasoning", source="openai", kind=e.kind,
+                     message=f"Reasoning reply unusable: {e}")
         decision = {
             "action": "proceed",
             "rationale": f"(Reasoning step produced no usable result: {e.kind}. "
@@ -531,6 +644,20 @@ def execute_expansion(state: dict, decision: dict) -> dict:
     print(f"{'='*60}\n")
 
     new_ligands_by_protein = {}  # protein → [ligand dicts]
+    failures: list[ExternalCallError] = []   # PubChem lookups that failed (not "no hit")
+
+    def lookup(what: str, target: str, fn, *args):
+        """Best-effort PubChem call for an expansion: a failure is recorded
+        and the item skipped.  No escalation here: round-1 results are already
+        saved, so a flaky PubChem should shrink the expansion, not end the run."""
+        try:
+            return fn(*args)
+        except ExternalCallError as e:
+            print(f"  WARNING: {what} failed for {target}: {compact_error(e)}",
+                  file=sys.stderr)
+            record_exception(state, stage="expansion", exc=e, target=target)
+            failures.append(e)
+            return None
 
     if action == "expand_3d_similar":
         seed_cids = decision.get("seed_cids") or []
@@ -554,7 +681,8 @@ def execute_expansion(state: dict, decision: dict) -> dict:
         print(f"  Expanding 3D similarity for CIDs: {seed_cids}")
         for cid in seed_cids:
             time.sleep(PUBCHEM_DELAY)
-            similar = search_3d_similar(cid, max_results=10)
+            similar = lookup("3D similarity search", f"CID {cid}",
+                             search_3d_similar, cid, 10) or []
             for c in similar:
                 if c["smiles"]:
                     lig = {
@@ -586,11 +714,13 @@ def execute_expansion(state: dict, decision: dict) -> dict:
                 # No names -> no new ligands -> "No new compounds found" below.
                 print(f"  WARNING: drug-name reply unusable ({e.kind}): {e}",
                       file=sys.stderr)
+                record_error(state, stage="expansion", source="openai",
+                             kind=e.kind, message=f"Drug-name reply unusable: {e}")
 
         print(f"  Looking up SMILES for {len(drug_names)} drugs: {drug_names}")
         for name in drug_names[:10]:
             time.sleep(PUBCHEM_DELAY)
-            result = lookup_smiles(str(name))
+            result = lookup("SMILES lookup", str(name), lookup_smiles, str(name))
             if result and result["smiles"]:
                 lig = {
                     "name": str(name),
@@ -605,6 +735,20 @@ def execute_expansion(state: dict, decision: dict) -> dict:
     # Count new compounds
     total_new = sum(len(v) for v in new_ligands_by_protein.values())
     print(f"\n  >> Added {total_new} new ligands across {len(new_ligands_by_protein)} targets")
+
+    # Tell the next reasoning step what actually happened, so it does not
+    # re-propose an expansion that failed for lack of data, not lack of merit.
+    outcome = f"{total_new} new ligand entries found"
+    if failures:
+        kinds = ", ".join(sorted({f.kind for f in failures}))
+        outcome += f"; {len(failures)} PubChem call(s) failed ({kinds})"
+
+    def set_outcome(text: str) -> None:
+        if state["expansion_history"]:
+            state["expansion_history"][-1]["outcome"] = text
+            save_state(state)
+
+    set_outcome(outcome)
 
     if not new_ligands_by_protein:
         print("  >> No new compounds found, proceeding to synthesis")
@@ -625,7 +769,10 @@ def execute_expansion(state: dict, decision: dict) -> dict:
 
     # Dock the new compounds
     state["round"] += 1
+    docked_before = len(state["all_docking_results"])
     state = stage_docking(state, targets_to_dock=expansion_targets)
+    # Docking can fail after the search succeeded: report what was actually docked.
+    set_outcome(f"{outcome}; {len(state['all_docking_results']) - docked_before} docked")
     return state
 
 
@@ -666,6 +813,19 @@ def stage_report(state: dict) -> dict:
                 f"- Rationale: {exp['rationale']}\n\n"
             )
 
+    # Disclose inputs that are missing because an external call failed, so a
+    # reader does not mistake a gap for a negative result.
+    error_lines = summarize_errors(state.get("errors", []))
+    errors_note = ""
+    if error_lines:
+        errors_note = (
+            "\n\n### Data Quality Notes\n\n"
+            "Some external calls failed even after retries, so the affected "
+            "items are missing from this analysis:\n\n"
+            + "\n".join(f"- {line}" for line in error_lines)
+            + "\n"
+        )
+
     print(">> Generating Methodology …")
     methodology = generate_methodology(disease, overview)
 
@@ -686,7 +846,7 @@ def stage_report(state: dict) -> dict:
         f"*Auto-generated on {today}*\n\n---\n\n"
         f"## Methodology\n\n{methodology}\n\n---\n\n"
         f"## Results\n\n{results_text}\n\n"
-        f"{reasoning_note}\n\n---\n\n"
+        f"{reasoning_note}{errors_note}\n\n---\n\n"
         f"## Conclusion\n\n{conclusion}\n"
     )
 
@@ -790,34 +950,34 @@ def run_pipeline(disease: str, max_rounds: int = MAX_EXPANSION_ROUNDS):
     print(f"{'#'*60}\n")
 
     # Stage 1: Literature
-    state = stage_literature(state)
+    state = _run_stage(state, "literature", stage_literature)
 
     # Stage 2: Structure retrieval
-    state = stage_structure(state)
+    state = _run_stage(state, "structure", stage_structure)
 
     # Stage 3: First docking round
     state["round"] = 1
-    state = stage_docking(state)
+    state = _run_stage(state, "docking", stage_docking)
 
     # Stage 4: Reasoning loop
     for _ in range(max_rounds):
-        decision = analyze_and_decide(state)
+        decision = _run_stage(state, "reasoning", analyze_and_decide)
 
         if decision["action"] == "proceed":
             print("\n  >> Reasoning decided: proceed to synthesis")
             break
 
         # Execute expansion and re-dock
-        state = execute_expansion(state, decision)
+        state = _run_stage(state, "expansion", execute_expansion, decision)
 
         # Analyze again after expansion
         # (the loop continues and will call analyze_and_decide again)
 
     # Stage 5: Report
-    state = stage_report(state)
+    state = _run_stage(state, "report", stage_report)
 
     # Stage 6: Paper
-    state = stage_paper(state)
+    state = _run_stage(state, "paper", stage_paper)
 
     # Final summary
     total_compounds = len(state["all_docking_results"])
@@ -829,6 +989,8 @@ def run_pipeline(disease: str, max_rounds: int = MAX_EXPANSION_ROUNDS):
     print(f"  Total compounds: {total_compounds}")
     print(f"  Hypotheses:      {len(state['hypotheses'])}")
     print(f"  Output:          final_paper.md")
+    if state["errors"]:
+        print(f"  Recorded errors: {len(state['errors'])} (see \"errors\" in {STATE_FILE})")
     print(f"{'#'*60}\n")
 
     return state
@@ -846,38 +1008,57 @@ def resume_pipeline():
 
     print(f"\n  Resuming pipeline for '{disease}' (status: {status})")
 
-    if status == "literature_complete":
-        state = stage_structure(state)
+    def structure_to_expansion(state: dict) -> dict:
+        """Stages 2-4 (one reasoning round), as the original resume did."""
+        if status != "structures_complete":
+            state = _run_stage(state, "structure", stage_structure)
         state["round"] = 1
-        state = stage_docking(state)
-        decision = analyze_and_decide(state)
+        state = _run_stage(state, "docking", stage_docking)
+        decision = _run_stage(state, "reasoning", analyze_and_decide)
         if decision["action"] != "proceed":
-            state = execute_expansion(state, decision)
-        state = stage_report(state)
-        state = stage_paper(state)
+            state = _run_stage(state, "expansion", execute_expansion, decision)
+        return state
 
-    elif "docking" in status:
-        # Rewrite agent3_output.json with correct schema before report
-        _write_docking_output(state)
-        state = stage_report(state)
-        state = stage_paper(state)
-
-    elif status == "report_complete":
-        state = stage_paper(state)
-
-    elif status == "complete":
+    if status == "complete":
         print("  Pipeline already complete.")
 
+    elif status == "report_complete":
+        _forget_stale_errors(state, {"paper"})
+        state = _run_stage(state, "paper", stage_paper)
+
+    elif "docking" in status:
+        # Reasoning appends one expansion_history entry per docking round.  If
+        # the last round has none, the run stopped before (or during) reasoning,
+        # and resuming straight to the report would silently skip it.
+        if len(state["expansion_history"]) < state["round"]:
+            print("  Reasoning for the last docking round had not completed; running it.")
+            _forget_stale_errors(state, {"reasoning", "expansion", "report", "paper"})
+            decision = _run_stage(state, "reasoning", analyze_and_decide)
+            if decision["action"] != "proceed":
+                state = _run_stage(state, "expansion", execute_expansion, decision)
+        else:
+            _forget_stale_errors(state, {"report", "paper"})
+        # Rewrite agent3_output.json with correct schema before report
+        _write_docking_output(state)
+        state = _run_stage(state, "report", stage_report)
+        state = _run_stage(state, "paper", stage_paper)
+
     else:
-        print(f"  Unknown status: {status}. Starting from structures.")
-        state = stage_structure(state)
-        state["round"] = 1
-        state = stage_docking(state)
-        decision = analyze_and_decide(state)
-        if decision["action"] != "proceed":
-            state = execute_expansion(state, decision)
-        state = stage_report(state)
-        state = stage_paper(state)
+        rerun = {"literature", "structure", "docking", "reasoning", "expansion",
+                 "report", "paper"}
+        if status != "initialized":
+            rerun.discard("literature")
+        if status == "structures_complete":
+            rerun.discard("structure")
+        _forget_stale_errors(state, rerun)
+        if status == "initialized":
+            # A failure in the very first stage leaves a state with no literature yet.
+            state = _run_stage(state, "literature", stage_literature)
+        elif status not in ("literature_complete", "structures_complete"):
+            print(f"  Unknown status: {status}. Starting from structures.")
+        state = structure_to_expansion(state)
+        state = _run_stage(state, "report", stage_report)
+        state = _run_stage(state, "paper", stage_paper)
 
     return state
 
@@ -909,12 +1090,20 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.resume:
-        resume_pipeline()
-    elif args.disease:
-        run_pipeline(args.disease, max_rounds=args.max_rounds)
-    else:
+    if not args.resume and not args.disease:
         parser.print_help()
+        sys.exit(1)
+
+    try:
+        if args.resume:
+            resume_pipeline()
+        else:
+            run_pipeline(args.disease, max_rounds=args.max_rounds)
+    except (ExternalCallError, EscalationRequired) as e:
+        # _run_stage has already saved the state with this error recorded.
+        print(f"\nPIPELINE STOPPED: {e}", file=sys.stderr)
+        print(f"Progress is saved in {STATE_FILE}. Fix the cause, then run: "
+              f"python pipeline.py --resume", file=sys.stderr)
         sys.exit(1)
 
 

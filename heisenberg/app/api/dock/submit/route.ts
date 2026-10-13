@@ -1,4 +1,5 @@
 import { submitDockJob } from "@/lib/dockJobs"
+import { errorPayload } from "@/lib/retry"
 import type { DockingTarget } from "@/lib/types"
 
 // Just kicks off the Modal job and returns — no need for the 600s budget
@@ -22,9 +23,7 @@ export async function POST(req: Request) {
     const { jobId } = await submitDockJob(targets, round)
     return Response.json({ jobId })
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+    const { status, body } = errorPayload(error)
+    return Response.json(body, { status })
   }
 }

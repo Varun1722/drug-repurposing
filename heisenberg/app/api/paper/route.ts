@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { queryPrompt } from "@/lib/openai"
 import { promptVersions } from "@/lib/prompts"
+import { errorPayload, routeBudget } from "@/lib/retry"
 
 export const maxDuration = 300
 
@@ -18,20 +19,22 @@ export async function POST(req: Request) {
       )
     }
 
+    // The four calls share one deadline, so retries cannot outlast maxDuration.
+    const budget = routeBudget(285_000)
     const abstract = await queryPrompt("paper/abstract", {
       review_text: reviewMd.slice(0, 3000),
       results_text: resultsMd.slice(0, 3000),
-    })
+    }, { maxTotalMs: budget() })
     const introduction = await queryPrompt("paper/introduction", {
       sections: reviewMd.slice(0, 5000),
-    })
+    }, { maxTotalMs: budget() })
     const mergedResults = await queryPrompt("paper/results", {
       results_text: resultsMd,
-    })
+    }, { maxTotalMs: budget() })
     const conclusion = await queryPrompt("paper/conclusion_from_full_text", {
       review_text: reviewMd.slice(0, 2000),
       results_text: resultsMd.slice(0, 2000),
-    })
+    }, { maxTotalMs: budget() })
 
     // Assemble final paper
     const paperMd =
@@ -55,9 +58,7 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error("Paper API error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+    const { status, body } = errorPayload(error)
+    return NextResponse.json(body, { status })
   }
 }

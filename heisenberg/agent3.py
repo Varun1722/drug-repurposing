@@ -21,6 +21,8 @@ Environment variables:
                           (printed by `modal deploy modal_app/gnina_worker.py`)
 """
 
+from __future__ import annotations
+
 import argparse
 import base64
 import json
@@ -29,8 +31,15 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import requests
 from dotenv import load_dotenv
+
+from resilience import (
+    DOCKING_POLICY,
+    ExternalCallError,
+    compact_error,
+    request_with_retry,
+    response_json,
+)
 
 load_dotenv()
 
@@ -70,7 +79,9 @@ def submit_chunk(endpoint_url: str, protein_pdb_b64: str, ligand_chunk: list[dic
     """Submit a single chunk to the GNINA Modal worker and return its output.
 
     This is a plain synchronous HTTP call — the worker docks the whole chunk
-    and replies once it's done, no submit/poll needed.
+    and replies once it's done, no submit/poll needed.  Docking is a pure
+    computation, so a transient failure (429/5xx, timeout, dropped connection)
+    is retried; a chunk that still fails raises ``ExternalCallError``.
     """
     payload = {
         "protein_pdb_b64": protein_pdb_b64,
@@ -79,13 +90,10 @@ def submit_chunk(endpoint_url: str, protein_pdb_b64: str, ligand_chunk: list[dic
     }
 
     print(f"    [chunk {chunk_idx}] Docking {len(ligand_chunk)} ligands …")
-    resp = requests.post(endpoint_url, json=payload, timeout=600)
+    resp = request_with_retry("post", endpoint_url, source="gnina", json=payload,
+                              timeout=600, policy=DOCKING_POLICY)
 
-    if not resp.ok:
-        print(f"    [chunk {chunk_idx}] GNINA worker error {resp.status_code}: {resp.text[:500]}", flush=True)
-        return {"error": f"Chunk {chunk_idx} HTTP {resp.status_code}", "results": []}
-
-    output = resp.json()
+    output = response_json(resp, "gnina")
     for err in output.get("errors", []):
         print(f"    [chunk {chunk_idx}] {err['name']}: {err['error']}", flush=True)
     print(f"    [chunk {chunk_idx}] Done ({output.get('processing_time_seconds', '?')}s)", flush=True)
@@ -98,7 +106,8 @@ def run_docking(
     endpoint_url: str = None,
     chunk_size: int = 10,
     samples_per_complex: int = 10,
-) -> list[dict]:
+    errors: list | None = None,
+):
     """
     Run GNINA molecular docking via a Modal serverless CPU worker.
 
@@ -108,10 +117,23 @@ def run_docking(
         endpoint_url: GNINA Modal worker URL
         chunk_size: Number of ligands per worker request
         samples_per_complex: Max poses to generate per drug-protein pair
+        errors: if given, every failure is appended as a dict with ``kind`` and
+            ``message`` (plus ``chunk`` / ``count``): chunks that failed after
+            retries, and ligands the worker itself could not dock.
 
     Returns:
-        List of result dicts sorted by confidence_score (descending).
+        ``(results, elapsed_seconds)``; results are sorted by confidence_score
+        (descending).  Some chunks may be missing from a partial run, which is
+        why ``errors`` matters.
+
+    Raises:
+        ExternalCallError: every chunk failed, so there is nothing to return.
     """
+    if errors is None:
+        errors = []
+    if not ligands:
+        return [], 0.0
+
     endpoint_url = endpoint_url or os.environ.get("GNINA_ENDPOINT_URL")
 
     if not endpoint_url:
@@ -127,6 +149,7 @@ def run_docking(
     print(f"  Docking {len(ligands)} ligands in {n_chunks} chunk(s) of ≤{chunk_size}")
 
     all_results = []
+    failed_chunks = 0
     start_time = time.time()
 
     with ThreadPoolExecutor(max_workers=min(n_chunks, 8)) as executor:
@@ -142,15 +165,36 @@ def run_docking(
             chunk_idx = futures[future]
             try:
                 output = future.result()
-                if output is None:
-                    print(f"    [chunk {chunk_idx}] Warning: empty output")
-                    continue
-                chunk_results = output.get("results", [])
-                all_results.extend(chunk_results)
             except Exception as e:
-                print(f"    [chunk {chunk_idx}] Error: {e}")
+                # Another chunk can still succeed, so record and carry on; the
+                # all-chunks-failed check below is what stops the run.
+                failed_chunks += 1
+                kind = e.kind if isinstance(e, ExternalCallError) else "unexpected"
+                print(f"    [chunk {chunk_idx}] FAILED ({kind}): {compact_error(e)}",
+                      flush=True)
+                errors.append({"kind": kind, "message": compact_error(e),
+                               "chunk": chunk_idx, "count": len(chunks[chunk_idx])})
+                continue
+            all_results.extend(output.get("results", []))
+            worker_errors = output.get("errors", [])
+            if worker_errors:
+                sample = "; ".join(
+                    f"{w.get('name')}: {w.get('error')}" for w in worker_errors[:3]
+                )
+                errors.append({
+                    "kind": "ligand_failed",
+                    "message": f"{len(worker_errors)} ligand(s) not docked: {sample}",
+                    "chunk": chunk_idx,
+                    "count": len(worker_errors),
+                })
 
     elapsed = time.time() - start_time
+
+    if failed_chunks == n_chunks:
+        raise ExternalCallError(
+            "gnina", errors[-1]["kind"],
+            f"gnina: all {n_chunks} docking chunk(s) failed (last: {errors[-1]['message']})",
+        )
 
     all_results.sort(key=lambda x: x.get("confidence_score", 0), reverse=True)
 
@@ -265,13 +309,24 @@ def run_pipeline(
             if lig.get("smiles")
         ]
 
-        results, elapsed = run_docking(
-            protein_pdb_path=pdb_file,
-            ligands=dock_ligands,
-            endpoint_url=endpoint_url,
-            chunk_size=chunk_size,
-            samples_per_complex=samples_per_complex,
-        )
+        dock_errors: list = []
+        try:
+            results, elapsed = run_docking(
+                protein_pdb_path=pdb_file,
+                ligands=dock_ligands,
+                endpoint_url=endpoint_url,
+                chunk_size=chunk_size,
+                samples_per_complex=samples_per_complex,
+                errors=dock_errors,
+            )
+        except ExternalCallError as e:
+            print(f"  ERROR: docking {protein} failed: {compact_error(e)}")
+            output_targets[idx]["status"] = "error"
+            output_targets[idx]["error"] = compact_error(e)
+            output_targets[idx]["errors"] = dock_errors
+            output["completed_targets"] += 1
+            _flush_output(output_file, output)
+            continue
         total_time += elapsed
 
         # Merge Agent 2 metadata back into results
@@ -288,6 +343,8 @@ def run_pipeline(
             "docking_time_seconds": round(elapsed, 2),
             "results": results,
         })
+        if dock_errors:
+            output_targets[idx]["errors"] = dock_errors
         output["completed_targets"] += 1
         output["total_docking_time_seconds"] = round(total_time, 2)
         _flush_output(output_file, output)
@@ -388,13 +445,17 @@ def main():
         print(f"  Agent 3 — GNINA Docking Simulation (manual mode)")
         print(f"{'=' * 60}\n")
 
-        results, elapsed = run_docking(
-            protein_pdb_path=args.protein,
-            ligands=ligands,
-            endpoint_url=args.endpoint_url,
-            chunk_size=args.chunk_size,
-            samples_per_complex=args.samples,
-        )
+        try:
+            results, elapsed = run_docking(
+                protein_pdb_path=args.protein,
+                ligands=ligands,
+                endpoint_url=args.endpoint_url,
+                chunk_size=args.chunk_size,
+                samples_per_complex=args.samples,
+            )
+        except ExternalCallError as e:
+            print(f"ERROR: {compact_error(e)}", file=sys.stderr)
+            sys.exit(1)
 
         _print_results_table(results)
 

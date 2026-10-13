@@ -18,6 +18,7 @@ import sys
 from datetime import datetime
 
 from llm import query_prompt
+from resilience import run_cli
 
 # ---------------------------------------------------------------------------
 # Markdown helpers
@@ -379,4 +380,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_cli(main)
