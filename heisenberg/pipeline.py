@@ -100,6 +100,10 @@ from final import (
 
 STATE_FILE = "pipeline_state.json"
 STRUCTURES_DIR = "structures"
+# Default for --max-rounds: how many times the reasoning loop may expand the
+# search after the first docking round.  The run's actual limit lives in
+# state["max_rounds"] (set from --max-rounds, saved so --resume keeps it);
+# lib/rounds.ts holds the same default for the web app.
 MAX_EXPANSION_ROUNDS = 2
 PUBCHEM_DELAY = 0.25
 
@@ -108,12 +112,13 @@ PUBCHEM_DELAY = 0.25
 # Pipeline state
 # ---------------------------------------------------------------------------
 
-def new_state(disease: str) -> dict:
+def new_state(disease: str, max_rounds: int = MAX_EXPANSION_ROUNDS) -> dict:
     """Create a fresh pipeline state."""
     return {
         "disease": disease,
         "status": "initialized",
         "round": 0,
+        "max_rounds": max_rounds,   # the one limit on expansion rounds for this run
         "protein_targets": [],
         "drugs": [],
         "targets": [],          # agent2-style target entries (protein, pdb_id, pdb_file, ligands)
@@ -145,6 +150,7 @@ def load_state() -> dict:
     with open(STATE_FILE, "r", encoding="utf-8") as f:
         state = json.load(f)
     state.setdefault("errors", [])   # state files from before error recording
+    state.setdefault("max_rounds", MAX_EXPANSION_ROUNDS)   # ... and before max_rounds
     return state
 
 
@@ -585,6 +591,23 @@ def analyze_and_decide(state: dict) -> dict:
     print(f"\n{'='*60}")
     print(f"  Stage 4: Reasoning — Round {round_num}")
     print(f"{'='*60}\n")
+
+    # Docking round 1 is the initial one, so ``max_rounds`` expansions end at
+    # docking round max_rounds + 1.  The loop in run_pipeline never reaches
+    # this; it guards direct callers and old state files.  There is nothing to
+    # ask the model at the limit, so do not.
+    max_round = state.get("max_rounds", MAX_EXPANSION_ROUNDS) + 1
+    if round_num >= max_round:
+        print("  Max rounds reached, proceeding to synthesis.")
+        return {
+            "action": "proceed",
+            "rationale": "Max rounds reached, proceeding to synthesis.",
+            "hypothesis": "",
+            "seed_cids": None,
+            "drug_class": None,
+            "drug_names": None,
+        }
+
     print(">> Asking OpenAI to analyze results …")
 
     try:
@@ -592,7 +615,7 @@ def analyze_and_decide(state: dict) -> dict:
             "analysis/reasoning_decision", ReasoningDecision,
             disease=disease,
             round=round_num,
-            max_round=MAX_EXPANSION_ROUNDS + 1,
+            max_round=max_round,
             hypotheses=json.dumps(hypotheses),
             expansion_history=json.dumps(state["expansion_history"]),
             top_results=json.dumps(results_summary, indent=2),
@@ -612,11 +635,6 @@ def analyze_and_decide(state: dict) -> dict:
             "drug_class": None,
             "drug_names": None,
         }
-
-    # Force proceed if we've hit max rounds
-    if round_num >= MAX_EXPANSION_ROUNDS + 1:
-        decision["action"] = "proceed"
-        decision["rationale"] += " (Max rounds reached, proceeding to synthesis.)"
 
     print(f"\n  Decision: {decision['action']}")
     print(f"  Rationale: {decision['rationale']}")
@@ -940,8 +958,16 @@ def stage_paper(state: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 def run_pipeline(disease: str, max_rounds: int = MAX_EXPANSION_ROUNDS):
-    """Run the full autonomous pipeline."""
-    state = new_state(disease)
+    """Run the full autonomous pipeline.
+
+    ``max_rounds`` is the most times the reasoning loop may expand the search
+    after the first docking round.  Each pass asks the model once; it ends
+    early when the model says "proceed".  An expansion that finds nothing
+    still uses up a pass.
+    """
+    if max_rounds < 0:
+        raise ValueError(f"max_rounds must be >= 0, got {max_rounds}")
+    state = new_state(disease, max_rounds)
 
     print(f"\n{'#'*60}")
     print(f"  Autonomous Drug Discovery Pipeline")
@@ -1030,7 +1056,8 @@ def resume_pipeline():
         # Reasoning appends one expansion_history entry per docking round.  If
         # the last round has none, the run stopped before (or during) reasoning,
         # and resuming straight to the report would silently skip it.
-        if len(state["expansion_history"]) < state["round"]:
+        owed = min(state["round"], state["max_rounds"])   # no reasoning past the limit
+        if len(state["expansion_history"]) < owed:
             print("  Reasoning for the last docking round had not completed; running it.")
             _forget_stale_errors(state, {"reasoning", "expansion", "report", "paper"})
             decision = _run_stage(state, "reasoning", analyze_and_decide)
@@ -1067,6 +1094,13 @@ def resume_pipeline():
 # CLI
 # ---------------------------------------------------------------------------
 
+def _non_negative_int(text: str) -> int:
+    value = int(text)
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"must be >= 0, got {value}")
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Autonomous Drug Discovery Pipeline"
@@ -1084,9 +1118,10 @@ def main():
     )
     parser.add_argument(
         "--max-rounds",
-        type=int,
+        type=_non_negative_int,
         default=MAX_EXPANSION_ROUNDS,
-        help=f"Max expansion rounds (default: {MAX_EXPANSION_ROUNDS}).",
+        help=f"Max expansion rounds after the first docking round, 0 to skip "
+             f"expansion (default: {MAX_EXPANSION_ROUNDS}).",
     )
     args = parser.parse_args()
 
