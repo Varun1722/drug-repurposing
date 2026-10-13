@@ -20,6 +20,7 @@ import { parseFdaCategory } from "@/lib/types"
 import type { FailureWarning } from "@/lib/retry"
 import { describeWarnings, errorMessageFrom } from "@/lib/warnings"
 import { pollDockJobUntilDone } from "@/lib/dockPolling"
+import { mayExpandAfter } from "@/lib/rounds"
 
 type AppPhase =
   | "idle"
@@ -730,7 +731,7 @@ export default function Home() {
             },
           ])
 
-          if (decisionData.action !== "proceed" && round <= 2) {
+          if (decisionData.action !== "proceed" && mayExpandAfter(round)) {
             // Store pending decision for user confirmation
             pendingDecisionRef.current = decisionData
 

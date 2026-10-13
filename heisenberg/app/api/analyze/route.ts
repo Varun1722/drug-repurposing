@@ -2,11 +2,10 @@ import { NextResponse } from "next/server"
 import { queryPromptStructured, LLMOutputError } from "@/lib/openai"
 import { ReasoningDecisionSchema } from "@/lib/llm-schemas"
 import { errorPayload } from "@/lib/retry"
+import { MAX_DOCKING_ROUND, mayExpandAfter } from "@/lib/rounds"
 import type { DockingResult, ReasoningDecision } from "@/lib/types"
 
 export const maxDuration = 60
-
-const MAX_EXPANSION_ROUNDS = 2
 
 export async function POST(req: Request) {
   try {
@@ -31,6 +30,16 @@ export async function POST(req: Request) {
       )
     }
 
+    // At the limit there is nothing to decide, so do not ask the model.
+    if (!mayExpandAfter(round)) {
+      const decision: ReasoningDecision = {
+        action: "proceed",
+        rationale: "Max rounds reached, proceeding to synthesis.",
+        hypothesis: "",
+      }
+      return NextResponse.json(decision)
+    }
+
     // Build top 30 summary
     const topResults = [...dockingResults]
       .sort((a, b) => b.confidenceScore - a.confidenceScore)
@@ -52,7 +61,7 @@ export async function POST(req: Request) {
         {
           disease,
           round,
-          max_round: MAX_EXPANSION_ROUNDS + 1,
+          max_round: MAX_DOCKING_ROUND,
           hypotheses: JSON.stringify(hypotheses),
           expansion_history: JSON.stringify(expansionHistory),
           top_results: JSON.stringify(topResults, null, 2),
@@ -84,15 +93,6 @@ export async function POST(req: Request) {
         rationale: `(Reasoning step produced no usable result: ${error.kind}. Proceeding to synthesis.)`,
         hypothesis: "",
       }
-    }
-
-    // Force proceed if max rounds reached
-    if (round >= MAX_EXPANSION_ROUNDS + 1) {
-      decision.action = "proceed"
-      delete decision.seedCids
-      delete decision.drugClass
-      delete decision.drugNames
-      decision.rationale += " (Max rounds reached, proceeding to synthesis.)"
     }
 
     return NextResponse.json(decision)
