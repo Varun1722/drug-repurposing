@@ -1,0 +1,3 @@
+# Adds networkx (path search over TxGNN's GraphMask scores) to the base TxGNN image.
+FROM heisenberg-txgnn:cpu
+RUN pip install --no-cache-dir networkx==3.1

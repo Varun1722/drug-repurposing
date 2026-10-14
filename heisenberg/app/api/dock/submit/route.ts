@@ -1,4 +1,4 @@
-import { submitDockJob } from "@/lib/dockJobs"
+import { submitDockJob } from "@/lib/dock-jobs"
 import { errorPayload } from "@/lib/retry"
 import type { DockingTarget } from "@/lib/types"
 

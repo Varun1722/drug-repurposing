@@ -4,7 +4,7 @@ Agent 3 — GNINA Docking Simulation Agent
 
 Reads Agent 2's output (agent2_output.json) containing protein structures and
 drug SMILES strings, sends them to GNINA running on a Modal serverless CPU
-worker (modal_app/gnina_worker.py), and returns ranked results with
+worker (services/docking/gnina_worker.py), and returns ranked results with
 confidence scores normalized to 0-1.
 
 Pipeline mode (reads Agent 2 output):
@@ -18,7 +18,7 @@ Test mode:
 
 Environment variables:
     GNINA_ENDPOINT_URL  - URL of the deployed Modal worker's web endpoint
-                          (printed by `modal deploy modal_app/gnina_worker.py`)
+                          (printed by `modal deploy services/docking/gnina_worker.py`)
 """
 
 from __future__ import annotations
@@ -138,7 +138,7 @@ def run_docking(
 
     if not endpoint_url:
         raise ValueError(
-            "GNINA_ENDPOINT_URL not set. Deploy modal_app/gnina_worker.py "
+            "GNINA_ENDPOINT_URL not set. Deploy services/docking/gnina_worker.py "
             "with `modal deploy` and set the printed URL."
         )
 

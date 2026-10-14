@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="590" viewBox="0 0 680 590" role="img" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>BIOS design flow using GLP-1R as the example</title>
+<desc>Five stages from picking a target to lab testing, each paired with the concrete GLP-1R example values from the BIOS blog.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect width="680" height="590" fill="#FFFFFF"/>
+<rect x="40" y="30" width="230" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.8"/>
+<text x="155" y="48" font-size="14" font-weight="500" fill="#444441" text-anchor="middle" dominant-baseline="central">Pick a target</text>
+<text x="155" y="68" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="middle" dominant-baseline="central">Prompt in chat or CLI</text>
+<line x1="270" y1="58" x2="300" y2="58" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="3 3"/>
+<rect x="300" y="30" width="340" height="56" rx="8" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.8"/>
+<text x="316" y="48" font-size="14" font-weight="500" fill="#2C2C2A" text-anchor="start" dominant-baseline="central">GLP-1R (UniProt P43220)</text>
+<text x="316" y="68" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">463 aa, GPCR, 62 PDB structures</text>
+<line x1="155" y1="94" x2="155" y2="122" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="130" width="230" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="155" y="148" font-size="14" font-weight="500" fill="#3C3489" text-anchor="middle" dominant-baseline="central">Analyse the target</text>
+<text x="155" y="168" font-size="12" font-weight="400" fill="#534AB7" text-anchor="middle" dominant-baseline="central">Structure and hotspots</text>
+<line x1="270" y1="158" x2="300" y2="158" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="3 3"/>
+<rect x="300" y="130" width="340" height="56" rx="8" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.8"/>
+<text x="316" y="148" font-size="14" font-weight="500" fill="#2C2C2A" text-anchor="start" dominant-baseline="central">AlphaFold fold, 4 evidence tracks</text>
+<text x="316" y="168" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">123 residues handed to design</text>
+<line x1="155" y1="194" x2="155" y2="222" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="230" width="230" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="155" y="248" font-size="14" font-weight="500" fill="#3C3489" text-anchor="middle" dominant-baseline="central">Generate binders</text>
+<text x="155" y="268" font-size="12" font-weight="400" fill="#534AB7" text-anchor="middle" dominant-baseline="central">Three models in parallel</text>
+<line x1="270" y1="258" x2="300" y2="258" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="3 3"/>
+<rect x="300" y="230" width="340" height="56" rx="8" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.8"/>
+<text x="316" y="248" font-size="14" font-weight="500" fill="#2C2C2A" text-anchor="start" dominant-baseline="central">RFdiffusion3, BoltzGen, PXDesign</text>
+<text x="316" y="268" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">About 100 peptides, 30–40 aa each</text>
+<line x1="155" y1="294" x2="155" y2="322" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="330" width="230" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="155" y="348" font-size="14" font-weight="500" fill="#3C3489" text-anchor="middle" dominant-baseline="central">Score and filter</text>
+<text x="155" y="368" font-size="12" font-weight="400" fill="#534AB7" text-anchor="middle" dominant-baseline="central">Triage plus six gates</text>
+<line x1="270" y1="358" x2="300" y2="358" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="3 3"/>
+<rect x="300" y="330" width="340" height="56" rx="8" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.8"/>
+<text x="316" y="348" font-size="14" font-weight="500" fill="#2C2C2A" text-anchor="start" dominant-baseline="central">100 candidates down to about 10</text>
+<text x="316" y="368" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Ranked by ipSAE, ~35 min, ~$8</text>
+<line x1="155" y1="394" x2="155" y2="422" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="430" width="230" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.8" stroke-dasharray="4 3"/>
+<text x="155" y="448" font-size="14" font-weight="500" fill="#712B13" text-anchor="middle" dominant-baseline="central">Make and test</text>
+<text x="155" y="468" font-size="12" font-weight="400" fill="#993C1D" text-anchor="middle" dominant-baseline="central">Synthesis plus assay</text>
+<line x1="270" y1="458" x2="300" y2="458" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="3 3"/>
+<rect x="300" y="430" width="340" height="56" rx="8" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.8"/>
+<text x="316" y="448" font-size="14" font-weight="500" fill="#2C2C2A" text-anchor="start" dominant-baseline="central">Route today: Adaptyv Bio (external)</text>
+<text x="316" y="468" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Robios hardware still in development</text>
+<text x="40" y="516" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">↻ Lab results feed back to recalibrate the filters</text>
+<rect x="40" y="542" width="14" height="14" rx="3" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="62" y="549" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Computational, runs in the app</text>
+<rect x="300" y="542" width="14" height="14" rx="3" fill="#FAECE7" stroke="#993C1D" stroke-width="0.8" stroke-dasharray="3 2"/>
+<text x="322" y="549" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Physical lab, early or external</text>
+</svg>

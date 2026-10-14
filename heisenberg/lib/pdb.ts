@@ -1,4 +1,4 @@
-// RCSB PDB API client. Behavioural reference: legacy-python-pipeline/agent2.py
+// RCSB PDB API client. Behavioural reference: legacy/python-pipeline/agent2.py
 //
 // "Nothing found" (RCSB's 204, or a 404) is a normal result: [] / empty
 // metadata / null. A request that fails even after retries throws
@@ -20,7 +20,7 @@ export interface PdbCandidate {
 
 /**
  * Search RCSB PDB for protein structures.
- * Reference: legacy-python-pipeline/agent2.py search_pdb()
+ * Reference: legacy/python-pipeline/agent2.py search_pdb()
  */
 export async function searchPdb(
   proteinName: string,
@@ -123,7 +123,7 @@ export async function getPdbMetadata(
 
 /**
  * Pick the best PDB structure: prefer those with ligands, then best resolution.
- * Reference: legacy-python-pipeline/agent2.py pick_best_structure(). A candidate whose metadata cannot be
+ * Reference: legacy/python-pipeline/agent2.py pick_best_structure(). A candidate whose metadata cannot be
  * fetched is skipped (it cannot be judged); if none can be, the first failure
  * is thrown.
  */
@@ -162,7 +162,7 @@ export async function pickBestStructure(
 
 /**
  * Download PDB file and return as base64 string (no disk write).
- * Reference: legacy-python-pipeline/agent2.py download_pdb(), adapted for serverless.
+ * Reference: legacy/python-pipeline/agent2.py download_pdb(), adapted for serverless.
  * Unlike the reference it does not convert .cif to .pdb (needs gemmi; a Python-service job).
  * Returns null when RCSB has neither a .pdb nor a .cif file for the id; a
  * failed download throws ExternalCallError.

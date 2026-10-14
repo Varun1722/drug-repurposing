@@ -7,13 +7,14 @@ GNINA's CPU-only CNN scoring (`--cnn fast`, `--no_gpu`), and returns the same
 {name, confidence_score, confidence_raw, all_poses} shape the old handler
 produced.
 
-Deploy:
-    modal deploy modal_app/gnina_worker.py
+Deploy (from the repo root; the Dockerfile is found next to this file, so the
+working directory does not matter):
+    modal deploy services/docking/gnina_worker.py
 
 This prints two URLs. The Next.js app uses the async job API (see `job_api`
 below): set it as GNINA_JOB_API_URL in .env. The older synchronous `dock`
 endpoint, https://<workspace>--gnina-worker-dock.modal.run, is used only by
-legacy-python-pipeline/agent3.py (GNINA_ENDPOINT_URL) and can be removed once
+legacy/python-pipeline/agent3.py (GNINA_ENDPOINT_URL) and can be removed once
 that folder is deleted.
 
 Binding site: the box is determined by a 3-tier fallback, each tier trying
@@ -74,10 +75,10 @@ ARTIFACT_RESNAMES = {
     "UNX", "UNL",
 }
 
-# See modal_app/Dockerfile for how the gnina binary + its CUDA/cuDNN runtime
+# See Dockerfile (next to this file) for how the gnina binary + its CUDA/cuDNN runtime
 # libs get into the image (no GPU, no driver, no CUDA base image involved --
 # validated by docking gnina's own 184L test ligand with zero GPU present).
-image = modal.Image.from_dockerfile("modal_app/Dockerfile").pip_install(
+image = modal.Image.from_dockerfile(str(Path(__file__).with_name("Dockerfile"))).pip_install(
     "rdkit", "fastapi[standard]"
 )
 

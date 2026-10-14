@@ -6,7 +6,7 @@ for how the gnina binary gets into the image.
 
 ## How the image works
 
-`gnina_worker.py` builds its image with `modal.Image.from_dockerfile("modal_app/Dockerfile")`.
+`gnina_worker.py` builds its image with `modal.Image.from_dockerfile(...)` on the `Dockerfile` next to it.
 That Dockerfile:
 
 1. Installs `nvidia-cudnn-cu12`, `nvidia-cublas-cu12`, `nvidia-cusparse-cu12`,
@@ -41,11 +41,11 @@ Dockerfile — 9 poses, real CNN pose scores, no CUDA/driver errors.
 ```bash
 pip install modal
 modal setup   # one-time auth
-modal deploy modal_app/gnina_worker.py
+modal deploy services/docking/gnina_worker.py
 ```
 
-Run this from the repo root (`modal_app/Dockerfile` is resolved relative to
-your current working directory, not the script's location).
+Run this from the repo root. The Dockerfile is found next to the script, so the
+working directory does not matter.
 
 The first deploy builds the Dockerfile stage on Modal's build infrastructure
 (downloads the CUDA pip wheels + the gnina binary — a few minutes, one-time
@@ -54,7 +54,7 @@ or the `pip_install` line changes. This prints two URLs:
 
 - `https://<workspace>--gnina-worker-dock.modal.run` — the original
   synchronous `dock` endpoint. **Legacy:** nothing in the app uses it; only
-  `legacy-python-pipeline/agent3.py` does (via `GNINA_ENDPOINT_URL`). It can be
+  `legacy/python-pipeline/agent3.py` does (via `GNINA_ENDPOINT_URL`). It can be
   removed from `gnina_worker.py` once the legacy folder is deleted.
 - `https://<workspace>--gnina-worker-job-api.modal.run` — the async
   submit/poll job queue (`/submit`, `/status/{job_id}`) used by the Next.js
@@ -94,7 +94,7 @@ secret — see git history on this file to reinstate it.
 ## Local test / iteration
 
 ```bash
-modal serve modal_app/gnina_worker.py
+modal serve services/docking/gnina_worker.py
 ```
 
 gives a temporary URL for iterating without a full deploy.
@@ -149,7 +149,7 @@ additive on the response (existing callers that only read `results` are
 unaffected).
 
 **Validated end-to-end on the deployed endpoint** against the sample PDBs in
-`structures/`: `8A27.pdb` (has a real co-crystallized ligand) → returns
+`tests/fixtures/`: `8A27.pdb` (has a real co-crystallized ligand) → returns
 `cocrystallized_ligand`; `2FMA.pdb` and `3QL9.pdb` (no qualifying ligand) →
 return `pocket_prediction`. `3QL9.pdb` specifically exercises the
 modified-residue guard (`_modified_residue_names()`, parsed from `MODRES`

@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { MoleculeViewer } from "@/components/molecule-viewer"
-import type { Drug } from "@/lib/mock-data"
+import type { Drug } from "@/lib/display-types"
 
 /** Extract PubChem CID from source field like "pubchem_cid_2244" */
 function extractCid(source: string | null): number | null {

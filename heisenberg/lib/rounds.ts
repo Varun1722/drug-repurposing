@@ -8,7 +8,7 @@
 // Used by app/api/analyze/route.ts (the prompt and the cutoff) and app/page.tsx
 // (whether to offer an expansion), so the two cannot drift apart. It is a single
 // fixed value; the old Python CLI took it as --max-rounds (see
-// legacy-python-pipeline/).
+// legacy/python-pipeline/).
 
 export const MAX_EXPANSION_ROUNDS = 2
 

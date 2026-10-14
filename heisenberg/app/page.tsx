@@ -6,7 +6,7 @@ import { ResearchPanel } from "@/components/research-panel"
 import { DataPanel, type SimulationStatus } from "@/components/data-panel"
 import { DrugDetailPanel } from "@/components/drug-detail-panel"
 import { ReportPanel } from "@/components/report-panel"
-import type { Drug, Protein } from "@/lib/mock-data"
+import type { Drug, Protein } from "@/lib/display-types"
 import type {
   ReviewDrug,
   DockingTarget,
@@ -19,7 +19,7 @@ import type {
 import { parseFdaCategory } from "@/lib/types"
 import type { FailureWarning } from "@/lib/retry"
 import { describeWarnings, errorMessageFrom } from "@/lib/warnings"
-import { pollDockJobUntilDone } from "@/lib/dockPolling"
+import { pollDockJobUntilDone } from "@/lib/dock-polling"
 import { mayExpandAfter } from "@/lib/rounds"
 
 type AppPhase =
@@ -591,7 +591,7 @@ export default function Home() {
 
       // Docking runs in the background on Modal (no held-open connection,
       // no Vercel duration limit) — poll for new events until done. A failed
-      // poll is retried on the next tick (see lib/dockPolling.ts).
+      // poll is retried on the next tick (see lib/dock-polling.ts).
       await pollDockJobUntilDone({
         jobId,
         fetchStatus: (since) =>

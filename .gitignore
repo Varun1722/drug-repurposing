@@ -1,3 +1,30 @@
-.next/dev
-.claude
+# OS and editor
 .DS_Store
+.idea/
+.vscode/
+
+# Local tool state (Claude Code launch configs, scheduled-task locks)
+.claude/
+
+# Secrets: only the *.example files are tracked
+.env
+.env.*
+!.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log

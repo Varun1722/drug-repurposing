@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { Protein, Drug } from "@/lib/mock-data"
+import type { Protein, Drug } from "@/lib/display-types"
 
 export type SimulationStatus = "idle" | "running" | "complete" | "waiting"
 

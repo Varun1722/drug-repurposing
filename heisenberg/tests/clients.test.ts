@@ -6,7 +6,7 @@
 import assert from "node:assert/strict"
 import { afterEach, beforeEach, describe, it } from "node:test"
 
-import { pollDockJob, submitDockJob } from "../lib/dockJobs"
+import { pollDockJob, submitDockJob } from "../lib/dock-jobs"
 import { webSearch } from "../lib/exa"
 import { downloadPdb, getPdbMetadata, pickBestStructure, searchPdb } from "../lib/pdb"
 import { lookupSmiles, search3dSimilar, searchCompoundsForTarget } from "../lib/pubchem"
@@ -237,7 +237,7 @@ describe("exa.webSearch", () => {
   })
 })
 
-describe("dockJobs", () => {
+describe("dock-jobs", () => {
   beforeEach(() => void (process.env.GNINA_JOB_API_URL = "https://gnina.test/"))
 
   it("submit returns the job id", async () => {

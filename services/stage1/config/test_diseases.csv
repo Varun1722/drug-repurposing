@@ -1,0 +1,21 @@
+query,mondo_id,name,group,why,in_matrix_filter,prevalence_world,txgnn_node_id,txgnn_node_index,txgnn_node_name,txgnn_grouped_members
+type 2 diabetes mellitus,MONDO:0005148,Type 2 diabetes mellitus,common,"Very common; many approved drugs, so it exposes popularity bias",True,"1,000-9,999 in 100,000",5148,28208.0,type 2 diabetes mellitus,1
+Alzheimer disease,MONDO:0004975,Alzheimer disease,common,"Large unmet need, many failed trials; merged PrimeKG node of 21 diseases",False,"10-99 in 100,000",11913_7088_11743_12153_7089_11194_12321_15140_4975_11561_11647_11777_12344_12609_12630_12631_14265_10422_14036_14316_100088,28780.0,Alzheimer disease,21
+rheumatoid arthritis,MONDO:0008383,Rheumatoid arthritis,common,Autoimmune; many approved drugs; JAK-inhibitor-style repurposing precedent,True,"100-999 in 100,000",8383,29078.0,rheumatoid arthritis,1
+asthma,MONDO:0004979,Asthma,common,Common respiratory disease; outside the MATRIX official filter,False,"1,000-9,999 in 100,000",4979,33675.0,asthma,1
+major depressive disorder,MONDO:0002009,Major depressive disorder,common,Psychiatric; different drug classes from the other common diseases,True,"1,000-9,999 in 100,000",2009_12050_12100,38957.0,major depressive disorder,3
+essential hypertension,MONDO:0001134,Essential hypertension,common,Common cardiovascular disease; merged PrimeKG node; outside the MATRIX filter,False,"27583.33 in 100,000",1200_1134_15512_5080_100078,36035.0,hypertension,5
+Parkinson disease,MONDO:0005180,Parkinson disease,common,Neurodegenerative; merged PrimeKG node of 18 diseases; active repurposing trials,True,"10-99 in 100,000",11764_11658_13625_8199_14604_11613_14233_11562_8200_14796_17279_5180_6966_828_10796_10360_11737_13167,28547.0,Parkinson disease,18
+ulcerative colitis,MONDO:0005101,Ulcerative colitis,common,Inflammatory bowel disease; known repurposing history,True,"100-999 in 100,000",5101,37785.0,ulcerative colitis (disease),1
+psoriasis,MONDO:0005083,Psoriasis,common,Dermatology; many approved drugs; outside the MATRIX filter,False,"10-99 in 100,000",5083,38024.0,psoriasis,1
+tuberculosis,MONDO:0018076,Tuberculosis,common,Infection; antimicrobial rather than chronic-disease drugs,False,,18076,32505.0,tuberculosis,1
+pancreatic ductal adenocarcinoma,MONDO:0005184,Pancreatic ductal adenocarcinoma,hard,Cancer with few effective drugs; tests cancer coverage,False,,5184,36766.0,pancreatic ductal adenocarcinoma,1
+idiopathic pulmonary fibrosis,MONDO:0800504,Idiopathic pulmonary fibrosis,hard,"Not a PrimeKG disease, so it exercises the MATRIX-only path",True,,,,,0
+nonalcoholic steatohepatitis,MONDO:0007027,Metabolic dysfunction-associated steatohepatitis,hard,Now called MASH; many repurposing trials; tests synonym lookup,True,,7027,84131.0,non-alcoholic steatohepatitis,1
+heart failure,MONDO:0005252,Heart failure,hard,"SGLT2 inhibitors moved from diabetes to heart failure, a real repurposing success",False,"100-999 in 100,000",5252,37659.0,heart failure,1
+amyotrophic lateral sclerosis,MONDO:0004976,Amyotrophic lateral sclerosis,rare,Few drugs; merged PrimeKG node of 21 diseases,True,"1-9 in 100,000",12945_11691_12077_8780_11196_27694_11951_10459_11223_11632_14223_12790_12753_13715_7103_13264_13891_14181_4976_5145_11952,27248.0,amyotrophic lateral sclerosis,21
+cystic fibrosis,MONDO:0009061,Cystic fibrosis,rare,"Rare; mostly targeted therapies, so few repurposing candidates",True,"1-9 in 100,000",9061,28714.0,cystic fibrosis,1
+Duchenne muscular dystrophy,MONDO:0010679,Duchenne muscular dystrophy,rare,Rare; steroid standard of care; active trial pipeline,True,"10-99 in 100,000",10679,32149.0,Duchenne muscular dystrophy,1
+Huntington disease,MONDO:0007739,Huntington disease,rare,"Rare (under 1 in 100,000); no disease-modifying drug, so a cold-start case",True,"<1 in 100,000",7739,31245.0,Huntington disease,1
+Friedreich ataxia,MONDO:0100339,Friedreich ataxia,rare,Rare; very few drugs; merged PrimeKG node,True,"1-9 in 100,000",11175_100340_100339,30072.0,friedreich ataxia,3
+Rett syndrome,MONDO:0010726,Rett syndrome,rare,Rare; very few drugs; a cold-start case,True,"1-9 in 100,000",10726,28856.0,Rett syndrome,1

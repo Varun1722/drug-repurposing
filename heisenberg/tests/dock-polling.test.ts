@@ -1,10 +1,10 @@
-// The docking status poll loop (lib/dockPolling.ts): a failed poll is retried
+// The docking status poll loop (lib/dock-polling.ts): a failed poll is retried
 // on the next tick, a run of failures gives up, a 4xx gives up at once.
 
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import { MAX_FAILED_POLLS, pollDockJobUntilDone } from "../lib/dockPolling"
+import { MAX_FAILED_POLLS, pollDockJobUntilDone } from "../lib/dock-polling"
 import type { DockJobEvent } from "../lib/types"
 import { networkError, res } from "./_fetch"
 

@@ -90,7 +90,7 @@ export interface ChatAction {
 }
 
 // Docking job event types — emitted by the Modal orchestrator
-// (modal_app/gnina_worker.py:run_docking_job) into a per-job event log that
+// (services/docking/gnina_worker.py:run_docking_job) into a per-job event log that
 // the frontend polls incrementally via /api/dock/status.
 export interface DockJobProgress {
   type: "progress"

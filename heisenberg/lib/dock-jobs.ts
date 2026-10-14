@@ -1,5 +1,5 @@
 // GNINA docking job client — submits/polls the async job queue exposed by
-// the Modal `job_api` endpoint (modal_app/gnina_worker.py). Docking runs in
+// the Modal `job_api` endpoint (services/docking/gnina_worker.py). Docking runs in
 // the background on Modal; this module never blocks on it, so callers stay
 // well under Vercel's function duration limits regardless of batch size.
 //

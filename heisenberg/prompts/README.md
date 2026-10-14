@@ -16,7 +16,7 @@ prompts/
 
 A prompt id is `<group>/<name>`, e.g. `analysis/reasoning_decision`.
 
-The old Python pipeline (`legacy-python-pipeline/`) has its own frozen snapshot
+The old Python pipeline (`legacy/python-pipeline/`) has its own frozen snapshot
 of this directory. Two of its prompts, `paper/therapeutic_landscape` and
 `paper/conclusion`, are not in the app: porting the 6-section paper means
 copying them back from that snapshot.

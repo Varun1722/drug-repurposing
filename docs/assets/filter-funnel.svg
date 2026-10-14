@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="700" viewBox="0 0 680 700" role="img" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>BIOS filter funnel from 100 candidates to about 10</title>
+<desc>A vertical pipeline showing live triage and six filter gates, with the illustrative survivor count after each gate from the BIOS site.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect width="680" height="700" fill="#FFFFFF"/>
+<rect x="40" y="24" width="600" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.8"/>
+<text x="56" y="46" font-size="14" font-weight="500" fill="#444441" text-anchor="start" dominant-baseline="central">100 candidates</text>
+<text x="290" y="46" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">3 generators, 30–40 aa each</text>
+<text x="624" y="46" font-size="14" font-weight="500" fill="#444441" text-anchor="end" dominant-baseline="central">100</text>
+<line x1="340" y1="72" x2="340" y2="88" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="92" width="600" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="56" y="114" font-size="14" font-weight="500" fill="#3C3489" text-anchor="start" dominant-baseline="central">Live triage</text>
+<text x="290" y="114" font-size="12" font-weight="400" fill="#534AB7" text-anchor="start" dominant-baseline="central">Cheap cutoffs while generating</text>
+<line x1="340" y1="140" x2="340" y2="156" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="160" width="600" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="56" y="182" font-size="14" font-weight="500" fill="#3C3489" text-anchor="start" dominant-baseline="central">Structural · Boltz-2</text>
+<text x="290" y="182" font-size="12" font-weight="400" fill="#534AB7" text-anchor="start" dominant-baseline="central">Does it fold and fit?</text>
+<text x="624" y="182" font-size="14" font-weight="500" fill="#3C3489" text-anchor="end" dominant-baseline="central">50</text>
+<line x1="340" y1="208" x2="340" y2="224" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="228" width="600" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="56" y="250" font-size="14" font-weight="500" fill="#3C3489" text-anchor="start" dominant-baseline="central">Agreement · ESMFold2</text>
+<text x="290" y="250" font-size="12" font-weight="400" fill="#534AB7" text-anchor="start" dominant-baseline="central">Does a second model agree?</text>
+<text x="624" y="250" font-size="14" font-weight="500" fill="#3C3489" text-anchor="end" dominant-baseline="central">31</text>
+<line x1="340" y1="276" x2="340" y2="292" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="296" width="600" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="56" y="318" font-size="14" font-weight="500" fill="#3C3489" text-anchor="start" dominant-baseline="central">Physics · PRODIGY</text>
+<text x="290" y="318" font-size="12" font-weight="400" fill="#534AB7" text-anchor="start" dominant-baseline="central">Is the interface truly buried?</text>
+<text x="624" y="318" font-size="14" font-weight="500" fill="#3C3489" text-anchor="end" dominant-baseline="central">22</text>
+<line x1="340" y1="344" x2="340" y2="360" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="364" width="600" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="56" y="386" font-size="14" font-weight="500" fill="#3C3489" text-anchor="start" dominant-baseline="central">Selectivity · 8 paralogs</text>
+<text x="290" y="386" font-size="12" font-weight="400" fill="#534AB7" text-anchor="start" dominant-baseline="central">Does it avoid look-alikes?</text>
+<text x="624" y="386" font-size="14" font-weight="500" fill="#3C3489" text-anchor="end" dominant-baseline="central">16</text>
+<line x1="340" y1="412" x2="340" y2="428" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="432" width="600" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text x="56" y="454" font-size="14" font-weight="500" fill="#085041" text-anchor="start" dominant-baseline="central">Dynamics · MD</text>
+<text x="290" y="454" font-size="12" font-weight="400" fill="#0F6E56" text-anchor="start" dominant-baseline="central">Stable over time?</text>
+<text x="624" y="454" font-size="14" font-weight="500" fill="#085041" text-anchor="end" dominant-baseline="central">12</text>
+<line x1="340" y1="480" x2="340" y2="496" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="500" width="600" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text x="56" y="522" font-size="14" font-weight="500" fill="#085041" text-anchor="start" dominant-baseline="central">Developability · ADMET</text>
+<text x="290" y="522" font-size="12" font-weight="400" fill="#0F6E56" text-anchor="start" dominant-baseline="central">Soluble, low immunogenicity?</text>
+<text x="624" y="522" font-size="14" font-weight="500" fill="#085041" text-anchor="end" dominant-baseline="central">10</text>
+<line x1="340" y1="548" x2="340" y2="564" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="40" y="568" width="600" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.8"/>
+<text x="56" y="590" font-size="14" font-weight="500" fill="#444441" text-anchor="start" dominant-baseline="central">Ranked shortlist</text>
+<text x="290" y="590" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Sequence, fold, scorecard</text>
+<text x="624" y="590" font-size="14" font-weight="500" fill="#444441" text-anchor="end" dominant-baseline="central">10</text>
+<rect x="40" y="640" width="14" height="14" rx="3" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text x="62" y="647" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Fast core: under 1 h, mostly CPU</text>
+<rect x="300" y="640" width="14" height="14" rx="3" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text x="322" y="647" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Deeper checks, survivors only</text>
+<text x="40" y="672" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="start" dominant-baseline="central">Counts are the site's illustrative funnel graphic, not a measured run.</text>
+</svg>
