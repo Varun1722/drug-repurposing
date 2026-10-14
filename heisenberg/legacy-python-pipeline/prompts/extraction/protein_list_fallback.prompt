@@ -1,0 +1,17 @@
+---
+name: protein_list_fallback
+description: "Extract protein targets for a disease from web-search results (used when review-text extraction found none)."
+input:
+  schema:
+    disease: string
+    search_results: string
+output:
+  schema: ProteinList
+---
+{{role "system"}}
+You are a biomedical research assistant. Based ONLY on the search results provided, list 3-5 well-known protein target names/symbols implicated in the disease given.
+{{role "user"}}
+Disease: {{disease}}
+
+Search results:
+{{search_results}}

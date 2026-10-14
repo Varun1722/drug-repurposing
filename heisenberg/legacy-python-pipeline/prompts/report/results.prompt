@@ -1,0 +1,45 @@
+---
+name: results
+description: "Results section of the docking report, split into disease-purposed / repurposing / novel compounds."
+input:
+  schema:
+    disease: string
+    disease_title: string
+    overview: string
+    disease_purposed: string
+    repurposing: string
+    novel: string
+---
+{{role "system"}}
+You are an expert computational biologist writing the results section of a peer-reviewed drug-repurposing research paper. Write in formal academic prose using Markdown formatting. Present the data objectively — interpret findings only where directly supported by the numbers. Include Markdown tables.
+{{role "user"}}
+Write a **Results** section for a research paper whose goal is to identify **drug repurposing candidates** for **{{disease}}** via molecular docking.
+
+## Full docking data
+
+{{overview}}
+
+The compounds have been classified into three categories:
+
+### A. Drugs Currently Approved for {{disease_title}}
+
+{{disease_purposed}}
+
+### B. Repurposing Candidates — FDA-Approved for Other Indications
+
+{{repurposing}}
+
+### C. Novel / Research Compounds (Not Yet FDA-Approved)
+
+{{novel}}
+
+The Results section MUST include:
+
+1. **Overview of Docking Runs** — number of targets, ligands, and total compute time.
+2. **Drugs Currently Purposed for {{disease_title}}** — present a ranked table of the disease-purposed drugs and their confidence scores per target. Comment on their performance as a baseline.  If none exist, state that explicitly.
+3. **Drug Repurposing Leaderboard** — THIS IS THE MOST IMPORTANT SECTION.  Present a single **combined leaderboard table** of ALL FDA-approved drugs that are approved for OTHER indications (not {{disease}}), ranked by their best GNINA confidence score across all targets.  Columns: Rank, Drug Name, Best Confidence Score, Target Protein, Original Approved Indication, Proposed Mechanism.  Below the table, discuss the top 5 candidates in detail — why their scores are noteworthy, what their original indication is, and what evidence supports repurposing potential.
+4. **Novel / Research Compounds** — briefly present top-scoring non-FDA compounds for completeness.
+5. **Cross-Target Comparison** — highlight any compound that scores well against multiple targets.
+6. **Score Distribution Analysis** — compare score ranges between disease-purposed drugs, repurposing candidates, and novel compounds.
+
+Use specific numbers from the data. Do not fabricate results.

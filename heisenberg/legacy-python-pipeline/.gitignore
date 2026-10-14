@@ -1,0 +1,11 @@
+# Files the CLI writes into its working directory when run from here.
+pipeline_state.json
+review.md
+review.json
+results.md
+final_paper.md
+agent2_output.json
+agent3_output.json
+*.tmp
+__pycache__/
+.pytest_cache/

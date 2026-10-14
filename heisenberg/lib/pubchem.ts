@@ -1,4 +1,4 @@
-// PubChem API client — ported from agent2.py
+// PubChem API client. Behavioural reference: legacy-python-pipeline/agent2.py
 //
 // "Not found" (a 404) is a normal result: null / []. A request that fails even
 // after retries throws ExternalCallError, so an outage is not mistaken for "no
@@ -132,7 +132,7 @@ async function collectCids(url: string): Promise<number[]> {
 
 /**
  * Search for bioactive compounds targeting a protein.
- * Port of agent2.py:search_compounds_for_target()
+ * Reference: legacy-python-pipeline/agent2.py search_compounds_for_target()
  *
  * Returns [] when PubChem has no active compounds for the target. If a lookup
  * failed and nothing was found, or the property fetch failed, it throws so an
@@ -194,7 +194,7 @@ export async function searchCompoundsForTarget(
 
 /**
  * Search for 3D-similar compounds.
- * Port of agent2.py:search_3d_similar()
+ * Reference: legacy-python-pipeline/agent2.py search_3d_similar()
  *
  * Returns [] if the CID has no 3D conformer or no neighbours; a failed request
  * throws ExternalCallError.

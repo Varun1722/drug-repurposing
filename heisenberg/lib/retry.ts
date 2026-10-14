@@ -1,5 +1,5 @@
 // Retry and failure classification for every external fetch (OpenAI, Exa,
-// PubChem, RCSB, PubMed, the GNINA job API). Python twin: resilience.py.
+// PubChem, RCSB, PubMed, the GNINA job API, and any Python model service).
 //
 //   - Transient failures (timeouts, dropped connections, HTTP 408/409/429/5xx)
 //     are retried with capped exponential backoff and full jitter, honouring

@@ -20,7 +20,7 @@ const outFile = join(root, "lib", "prompts.generated.ts")
 
 const sources = {}
 for (const group of readdirSync(promptsDir, { withFileTypes: true })) {
-  // Directories starting with "_" (e.g. _parity) hold test fixtures, not prompts.
+  // Directories starting with "_" hold fixtures or scratch files, not prompts.
   if (!group.isDirectory() || group.name.startsWith("_")) continue
   for (const file of readdirSync(join(promptsDir, group.name)).sort()) {
     if (!file.endsWith(".prompt")) continue

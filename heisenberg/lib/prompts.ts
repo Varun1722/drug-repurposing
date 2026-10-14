@@ -10,8 +10,6 @@
 // prompt. Values are substituted in a single pass and never re-scanned, so text
 // that happens to contain {{...}} (e.g. a paper abstract) is inserted verbatim.
 //
-// Python twin: prompt_loader.py. Both implement the same spec and are checked
-// against prompts/_parity/ so they render byte-identical text.
 
 import { createHash } from "node:crypto"
 import { parse as parseYaml } from "yaml"
@@ -50,7 +48,7 @@ const NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/
 const ROLE_RE = /^\{\{role "(system|user)"\}\}[ \t]*$/gm
 const PLACEHOLDER_RE = /\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}/g
 const VARIABLE_TYPES: readonly string[] = ["string", "integer", "boolean"]
-const TRAILING_WHITESPACE_RE = /[ \t\n\r\f\v]+$/ // ASCII only, so Python and TypeScript agree
+const TRAILING_WHITESPACE_RE = /[ \t\n\r\f\v]+$/ // ASCII only: unicode whitespace in a prompt is meaningful
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)

@@ -1,0 +1,13 @@
+---
+name: protein_list
+description: "Extract protein targets from a literature-review text."
+input:
+  schema:
+    text: string
+output:
+  schema: ProteinList
+---
+{{role "system"}}
+You are a biomedical research assistant. Extract a concise list of protein targets from the following text, as short protein names or gene symbols (e.g. EGFR, HER2, BRAF).
+{{role "user"}}
+{{text}}

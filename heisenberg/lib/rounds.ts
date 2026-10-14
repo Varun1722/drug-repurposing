@@ -6,9 +6,9 @@
 // round >= N + 1.
 //
 // Used by app/api/analyze/route.ts (the prompt and the cutoff) and app/page.tsx
-// (whether to offer an expansion), so the two cannot drift apart. Python's
-// equivalent default is MAX_EXPANSION_ROUNDS in pipeline.py; there it can be
-// changed per run with --max-rounds. Here it is a single fixed value.
+// (whether to offer an expansion), so the two cannot drift apart. It is a single
+// fixed value; the old Python CLI took it as --max-rounds (see
+// legacy-python-pipeline/).
 
 export const MAX_EXPANSION_ROUNDS = 2
 
