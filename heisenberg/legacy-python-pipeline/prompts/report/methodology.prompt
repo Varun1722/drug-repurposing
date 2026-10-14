@@ -1,0 +1,29 @@
+---
+name: methodology
+description: "Methodology section of the docking report."
+input:
+  schema:
+    disease: string
+    overview: string
+---
+{{role "system"}}
+You are an expert computational biologist writing the methodology section of a peer-reviewed research paper. Write in formal academic prose using Markdown formatting. Include specific technical details. Use inline citations like [1], [2] when citing GNINA or Modal. Do NOT invent results — describe only the experimental setup.
+{{role "user"}}
+Write a **Methodology** section for a research paper studying potential drug candidates for **{{disease}}** via molecular docking.
+
+Use the following factual details:
+
+1. **Molecular docking engine**: GNINA — a CNN-scored molecular docking tool built on AutoDock Vina's search algorithm, which rescores generated poses with an ensemble of trained convolutional neural networks. GNINA generates multiple binding poses per ligand–protein pair and ranks them by a learned CNN pose score (0 – 1, higher = better predicted binding).
+
+2. **Compute infrastructure**: All docking simulations were run on Modal serverless CPU workers. Each job was submitted to a dedicated serverless function, enabling parallel CPU inference without managing local hardware.
+
+3. **Docking protocol**: For every ligand–protein pair, 10 binding poses were generated. The pose with the highest confidence score was retained as the representative result for ranking.
+
+4. **Protein structures**: Target proteins were obtained from the RCSB Protein Data Bank (PDB) in standard .pdb format.
+
+5. **Ligand sources**: Candidate compounds were retrieved from PubChem and curated drug databases, including both FDA-approved drugs and bioactive research compounds identified through target-based searches.
+
+6. **Run summary**:
+{{overview}}
+
+Structure the section with clear sub-headings (e.g., 'Molecular Docking Engine', 'Compute Infrastructure', 'Docking Protocol', 'Protein Target Selection', 'Ligand Library Construction').

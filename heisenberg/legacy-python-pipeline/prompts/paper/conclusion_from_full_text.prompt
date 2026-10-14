@@ -1,0 +1,18 @@
+---
+name: conclusion_from_full_text
+description: "Write one conclusion from the full literature review and docking results (Next.js paper route). The Python pipeline instead merges extracted conclusion sections: see paper/conclusion."
+input:
+  schema:
+    review_text: string
+    results_text: string
+---
+{{role "system"}}
+You are a scientific writer. Write a unified conclusion combining findings from both the literature review and computational results.
+{{role "user"}}
+Write a conclusion for this paper:
+
+REVIEW:
+{{review_text}}
+
+RESULTS:
+{{results_text}}

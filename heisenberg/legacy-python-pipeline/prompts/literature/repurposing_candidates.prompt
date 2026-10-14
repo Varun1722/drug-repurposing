@@ -1,0 +1,40 @@
+---
+name: repurposing_candidates
+description: "Write up repurposing candidates from any therapeutic area, grounded in web-search results."
+input:
+  schema:
+    disease: string
+    proteins: string
+    search_results: string
+---
+{{role "system"}}
+You are a computational pharmacology expert specialising in drug repurposing and polypharmacology. Write a detailed Markdown section for a literature review, grounded ONLY in the web search results provided below. Be exhaustive: include drugs from cardiology, psychiatry, infectious disease, metabolic disorders, autoimmune conditions, and any other field. Cite sources using their [N] index from the search results below.
+{{role "user"}}
+The following proteins have been identified as therapeutic targets in **{{disease}}**: {{proteins}}.
+
+Web search results on repurposing candidates:
+{{search_results}}
+
+Using ONLY the evidence above, identify FDA-approved drugs from ANY therapeutic area — not just oncology — that have known or computationally predicted interactions with these proteins. Consider:
+- Molecular docking studies showing binding affinity
+- Shared binding-site homology with known inhibitors
+- Off-target activity reported in pharmacovigilance data
+- Structural similarity (Tanimoto ≥ 0.5) to known ligands
+- Drug-gene interaction databases (DGIdb, DrugBank, STITCH)
+- Repurposing screens or virtual screening hits
+
+Write the following sections in Markdown:
+
+## Non-Obvious & Repurposing Drug Candidates
+
+For each drug, explain:
+- Original indication / FDA-approved use
+- Which target protein(s) it may interact with and the evidence
+- Proposed mechanism of action against {{disease}}
+- Confidence level (strong evidence / computational prediction / speculative)
+
+## Repurposing Candidates Summary Table
+
+Markdown table: Drug Name | Original Indication | Target Protein(s) | Evidence Type | Confidence
+
+Include at least 10 drugs, citing sources by [N]. Prioritise non-obvious candidates that are NOT already in mainstream {{disease}} research.

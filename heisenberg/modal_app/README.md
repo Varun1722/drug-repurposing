@@ -53,8 +53,9 @@ cost). Modal caches that image; later deploys only rebuild if `Dockerfile`
 or the `pip_install` line changes. This prints two URLs:
 
 - `https://<workspace>--gnina-worker-dock.modal.run` — the original
-  synchronous `dock` endpoint. Set as `GNINA_ENDPOINT_URL` in `.env` (used
-  only by `agent3.py`'s standalone pipeline today).
+  synchronous `dock` endpoint. **Legacy:** nothing in the app uses it; only
+  `legacy-python-pipeline/agent3.py` does (via `GNINA_ENDPOINT_URL`). It can be
+  removed from `gnina_worker.py` once the legacy folder is deleted.
 - `https://<workspace>--gnina-worker-job-api.modal.run` — the async
   submit/poll job queue (`/submit`, `/status/{job_id}`) used by the Next.js
   app. Set as `GNINA_JOB_API_URL` in `.env`. Unauthenticated by design (see
@@ -62,7 +63,7 @@ or the `pip_install` line changes. This prints two URLs:
 
 ## Async job queue (`/submit`, `/status/{job_id}`)
 
-`dock` is a single blocking HTTP call — fine for `agent3.py`, but the
+`dock` is a single blocking HTTP call — it worked for the old Python CLI, but the
 Next.js app's dock UI can run many ligands across several targets, well
 past what a Vercel serverless function is allowed to stay open for. Instead
 of holding a connection open, the app now:

@@ -1,0 +1,24 @@
+---
+name: abstract
+description: "Abstract of the final paper, from the literature review and the docking results."
+input:
+  schema:
+    review_text: string
+    results_text: string
+---
+{{role "system"}}
+You are an expert biomedical research writer composing the abstract of a peer-reviewed research paper. Write a single cohesive paragraph of 200-300 words in formal academic prose. Do NOT use Markdown headers — output only the abstract paragraph text. Do NOT include the word 'Abstract' as a heading.
+{{role "user"}}
+Write an abstract for a research paper that combines a literature review and computational drug-repurposing study. The abstract must:
+
+1. State the clinical problem (disease, unmet need).
+2. Briefly describe the approach (literature review of molecular targets + GNINA molecular docking on Modal serverless CPU compute).
+3. Summarise key protein targets identified.
+4. Highlight the top drug repurposing candidates and their confidence scores.
+5. State the main conclusion and the need for experimental validation.
+
+--- LITERATURE REVIEW ---
+{{review_text}}
+
+--- DOCKING RESULTS ---
+{{results_text}}

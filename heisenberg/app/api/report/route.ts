@@ -26,9 +26,8 @@ const CATEGORY_TABLE_HEADER =
   "|------|----------|------------|-----------|------------|--------|\n"
 
 /**
- * Per-protein ranked tables for one compound category, in the same layout the
- * Python pipeline (results.py: build_classified_overview) feeds the shared
- * report/* prompts.
+ * Per-protein ranked tables for one compound category, in the layout the
+ * report/* prompts expect.
  */
 function formatCategoryBlock(
   results: DockingResult[],

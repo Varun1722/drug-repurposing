@@ -5,15 +5,16 @@ Replaces the old GPU-based docking worker. Docks each ligand (given as a
 SMILES string) against a protein receptor (given as a PDB file) using
 GNINA's CPU-only CNN scoring (`--cnn fast`, `--no_gpu`), and returns the same
 {name, confidence_score, confidence_raw, all_poses} shape the old handler
-produced, so lib/gnina.ts and agent3.py only need to change *where* they
-send the request, not how they parse the response.
+produced.
 
 Deploy:
     modal deploy modal_app/gnina_worker.py
 
-This prints a URL like:
-    https://<workspace>--gnina-worker-dock.modal.run
-Set that as GNINA_ENDPOINT_URL in .env (and wherever the Next.js app / agent3.py run).
+This prints two URLs. The Next.js app uses the async job API (see `job_api`
+below): set it as GNINA_JOB_API_URL in .env. The older synchronous `dock`
+endpoint, https://<workspace>--gnina-worker-dock.modal.run, is used only by
+legacy-python-pipeline/agent3.py (GNINA_ENDPOINT_URL) and can be removed once
+that folder is deleted.
 
 Binding site: the box is determined by a 3-tier fallback, each tier trying
 the next only if the previous finds nothing:
@@ -520,8 +521,8 @@ def run_docking_job(job_id: str, targets: list[dict], round: int) -> None:
 @modal.asgi_app()
 def job_api():
     """Submit/poll endpoints for the async docking job queue. Kept as a
-    separate web endpoint from `dock` so agent3.py's direct synchronous
-    calls to `dock` are unaffected.
+    separate web endpoint from the synchronous `dock` endpoint, which only
+    the legacy Python CLI still calls.
 
     Unauthenticated by request — anyone with the URL can submit/poll jobs.
     MAX_TARGETS_PER_JOB / MAX_LIGANDS_PER_JOB / JOB_TIMEOUT_SECONDS above are

@@ -1,0 +1,29 @@
+---
+name: conclusion
+description: "Conclusion section of the docking report, emphasising the repurposing findings."
+input:
+  schema:
+    disease: string
+    overview: string
+    repurposing: string
+---
+{{role "system"}}
+You are an expert computational biologist writing the conclusion of a peer-reviewed drug-repurposing research paper. Write in formal academic prose using Markdown formatting. Ground all statements in the data provided; clearly distinguish computational predictions from experimental evidence.
+{{role "user"}}
+Write a **Conclusion** section for a research paper whose primary goal was to identify **drug repurposing candidates** for **{{disease}}** via molecular docking.
+
+Data summary:
+
+{{overview}}
+
+Repurposing leaderboard data:
+
+{{repurposing}}
+
+The Conclusion MUST cover:
+
+1. **Summary of Key Findings** — which repurposed drugs showed the strongest predicted binding and for which target(s). Highlight how they compare to drugs already approved for {{disease}} (if any were tested).
+2. **Top Repurposing Candidates** — name the most promising FDA-approved drugs from other therapeutic areas, their original indications, and why their docking scores suggest they merit further investigation for {{disease}}.
+3. **Clinical Implications** — what these docking results suggest for accelerated clinical trials, given that repurposed drugs already have established safety profiles. Note these are computational predictions requiring experimental validation.
+4. **Limitations** — limitations of GNINA confidence scores as proxies for actual binding affinity, absence of molecular dynamics / free-energy perturbation follow-up, limited target conformational sampling, etc.
+5. **Future Directions** — recommended next steps: MD simulations, in vitro binding assays, ADMET profiling, and preclinical testing for the top repurposing candidates.

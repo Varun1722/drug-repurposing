@@ -153,21 +153,3 @@ describe("shipped prompts", () => {
     assert.deepEqual(offenders, [])
   })
 })
-
-describe("cross-language parity with the Python loader", () => {
-  const parity = join(PROMPTS_DIR, "_parity")
-  const vars = JSON.parse(readFileSync(join(parity, "vars.json"), "utf8")) as Record<string, Record<string, string | number | boolean>>
-  const rendered = JSON.parse(readFileSync(join(parity, "rendered.json"), "utf8")) as Record<string, { hash: string; system: string; user: string }>
-
-  it("fixtures cover every prompt", () => {
-    assert.deepEqual(Object.keys(vars).sort(), listPromptIds())
-    assert.deepEqual(Object.keys(rendered).sort(), listPromptIds())
-  })
-
-  for (const id of Object.keys(rendered)) {
-    it(`${id} renders byte-identical text and hash`, () => {
-      const r = renderPrompt(id, vars[id])
-      assert.deepEqual({ hash: r.hash, system: r.system, user: r.user }, rendered[id])
-    })
-  }
-})

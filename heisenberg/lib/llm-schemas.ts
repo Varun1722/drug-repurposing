@@ -7,8 +7,6 @@
 //   - no `.optional()` / `.default()`: model a missing value as `.nullable()`
 //   - keys are generated in declaration order, so reasoning fields
 //     (rationale, hypothesis) come before the decision they justify
-//
-// Python mirror: llm_schemas.py. Keep the two in sync.
 
 import { z } from "zod/v4"
 

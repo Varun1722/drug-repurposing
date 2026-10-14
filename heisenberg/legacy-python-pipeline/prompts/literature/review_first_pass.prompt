@@ -1,0 +1,22 @@
+---
+name: review_first_pass
+description: "First-pass literature review from PubMed papers about the disease."
+input:
+  schema:
+    disease: string
+    papers: string
+---
+{{role "system"}}
+You are an expert biomedical researcher. Write a detailed, scholarly literature review in Markdown format. Use inline citations like [1], [2], etc., referencing the papers provided.
+{{role "user"}}
+Using the following PubMed papers, write a comprehensive literature review about **{{disease}}**.
+
+Include:
+1. Introduction (epidemiology, significance)
+2. Molecular and genetic landscape
+3. **Key protein targets** for treatment
+4. Current therapeutic strategies
+5. References
+
+Papers:
+{{papers}}

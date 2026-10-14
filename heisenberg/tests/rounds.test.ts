@@ -11,7 +11,7 @@ import { mockFetch, res } from "./_fetch"
 describe("lib/rounds", () => {
   it("round 1 is the initial docking, so N expansions end at docking round N + 1", () => {
     assert.equal(MAX_DOCKING_ROUND, MAX_EXPANSION_ROUNDS + 1)
-    assert.equal(MAX_EXPANSION_ROUNDS, 2) // same default as pipeline.py
+    assert.equal(MAX_EXPANSION_ROUNDS, 2)
   })
 
   it("may expand until the limit, never at or past it", () => {
