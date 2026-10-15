@@ -1,0 +1,1506 @@
+{
+  "disease": "breast cancer",
+  "recordedAt": "2026-10-15T14:30:45.653Z",
+  "proteins": [
+    "ESR1",
+    "PGR",
+    "HER2",
+    "PIK3CA",
+    "AKT1",
+    "mTOR",
+    "PTEN",
+    "CDK4",
+    "CDK6",
+    "RB1",
+    "Cyclin D",
+    "PD-1",
+    "PD-L1",
+    "PARP",
+    "BRCA1",
+    "BRCA2",
+    "RAS",
+    "RAF",
+    "MEK",
+    "ERK",
+    "Aromatase",
+    "TOP1"
+  ],
+  "drugs": [
+    {
+      "drug": "Tamoxifen",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Selective estrogen receptor modulator; tamoxifen and particularly its active metabolites antagonize ER-mediated transcription in breast tissue.",
+      "fdaStatus": "FDA-approved for breast cancer treatment and specified risk-reduction indications.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Extensively tested in randomized breast cancer trials as an ER-directed endocrine therapy."
+    },
+    {
+      "drug": "Endoxifen",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Active tamoxifen metabolite that binds and antagonizes estrogen receptor-alpha.",
+      "fdaStatus": "Not separately FDA-approved as a drug.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied as an investigational ER-directed drug in Phase 1 and Phase 2 breast cancer trials."
+    },
+    {
+      "drug": "4-Hydroxytamoxifen",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Active tamoxifen metabolite that binds estrogen receptor-alpha and modulates its transcriptional activity.",
+      "fdaStatus": "Not separately FDA-approved as a drug.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Topical formulations have been studied in Phase 2 trials in ER-positive ductal carcinoma in situ."
+    },
+    {
+      "drug": "Toremifene",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Selective estrogen receptor modulator with antiestrogenic activity in breast tissue.",
+      "fdaStatus": "FDA-approved for metastatic breast cancer in postmenopausal women with ER-positive or ER-unknown tumors.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Tested in randomized breast cancer trials as an ER-directed endocrine therapy."
+    },
+    {
+      "drug": "Fulvestrant",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Binds ER, antagonizes its activity, and promotes receptor degradation.",
+      "fdaStatus": "FDA-approved for specified HR-positive advanced breast cancer settings, alone or in combinations.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Extensively tested in Phase 3 ER-directed breast cancer trials, including endocrine and targeted-therapy combinations."
+    },
+    {
+      "drug": "Elacestrant",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Oral selective estrogen receptor antagonist and degrader.",
+      "fdaStatus": "FDA-approved for specified previously treated ER-positive, HER2-negative, ESR1-mutated advanced or metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 EMERALD evaluated ER-directed treatment in advanced breast cancer, including the ESR1-mutated population."
+    },
+    {
+      "drug": "Imlunestrant",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Oral selective estrogen receptor antagonist and degrader.",
+      "fdaStatus": "The review reports FDA approval in September 2025 for specified previously treated ER-positive, HER2-negative, ESR1-mutated advanced or metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 EMBER-3 evaluated ER-directed treatment in advanced breast cancer, including ESR1-mutated disease."
+    },
+    {
+      "drug": "Vepdegestrant (ARV-471)",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "ER-binding PROTAC that recruits a cereblon-containing E3 ligase to promote ER ubiquitination and degradation; a purpose-developed oncology agent, not a repurposed nononcology drug.",
+      "fdaStatus": "Presented as investigational in the review; the supplied preclinical study does not establish FDA approval.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied clinically for ER degradation, including the Phase 3 VERITAC-2 trial in ER-positive, HER2-negative advanced breast cancer."
+    },
+    {
+      "drug": "Camizestrant",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Purpose-developed oral ER antagonist and degrader.",
+      "fdaStatus": "Presented as investigational in the review; no FDA approval is established by the supplied text.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied in Phase 2 and Phase 3 ER-directed breast cancer trials, including SERENA-2 and SERENA-6."
+    },
+    {
+      "drug": "Giredestrant",
+      "proteins": [
+        "ESR1"
+      ],
+      "mechanism": "Purpose-developed oral ER antagonist and degrader.",
+      "fdaStatus": "Presented as investigational in the review; no FDA approval is established by the supplied text.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied in Phase 2 and Phase 3 ER-directed breast cancer trials, including acelERA and persevERA."
+    },
+    {
+      "drug": "Megestrol acetate",
+      "proteins": [
+        "PGR"
+      ],
+      "mechanism": "Synthetic progestin and progesterone receptor agonist with complex endocrine antitumor effects.",
+      "fdaStatus": "FDA-approved for palliative treatment of advanced breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Tested in clinical breast cancer endocrine-therapy trials; these do not establish selective inhibition of oncogenic PGR signaling."
+    },
+    {
+      "drug": "Mifepristone",
+      "proteins": [
+        "PGR"
+      ],
+      "mechanism": "Progesterone receptor antagonist; also antagonizes the glucocorticoid receptor, which is outside the requested target list.",
+      "fdaStatus": "FDA-approved for non-breast-cancer indications; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "PR-directed clinical studies have been conducted in breast cancer, including early-phase and presurgical studies."
+    },
+    {
+      "drug": "Onapristone",
+      "proteins": [
+        "PGR"
+      ],
+      "mechanism": "Progesterone receptor antagonist.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied in early-phase PR-directed trials in breast cancer and other hormone-dependent malignancies."
+    },
+    {
+      "drug": "Trastuzumab",
+      "proteins": [
+        "HER2"
+      ],
+      "mechanism": "Antibody binding HER2 extracellular domain IV; produces receptor-related effects and immune-mediated cytotoxicity.",
+      "fdaStatus": "FDA-approved for specified HER2-positive breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Extensively tested in Phase 3 HER2-directed breast cancer trials in early and metastatic disease."
+    },
+    {
+      "drug": "Pertuzumab",
+      "proteins": [
+        "HER2"
+      ],
+      "mechanism": "Antibody binding HER2 extracellular domain II and inhibiting HER2 heterodimerization.",
+      "fdaStatus": "FDA-approved in combinations for specified HER2-positive breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 trials including CLEOPATRA and APHINITY evaluated HER2-directed treatment."
+    },
+    {
+      "drug": "Margetuximab",
+      "proteins": [
+        "HER2"
+      ],
+      "mechanism": "Fc-engineered anti-HER2 antibody designed to enhance immune effector activity.",
+      "fdaStatus": "FDA-approved with chemotherapy for specified previously treated HER2-positive metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 SOPHIA evaluated HER2-directed treatment in previously treated metastatic breast cancer."
+    },
+    {
+      "drug": "Lapatinib",
+      "proteins": [
+        "HER2"
+      ],
+      "mechanism": "Reversible ATP-site inhibitor of HER2 and EGFR; EGFR is outside the requested target list.",
+      "fdaStatus": "FDA-approved in specified combinations for HER2-positive advanced or metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Tested in Phase 3 HER2-directed breast cancer trials, including combinations with capecitabine or endocrine therapy."
+    },
+    {
+      "drug": "Neratinib",
+      "proteins": [
+        "HER2"
+      ],
+      "mechanism": "Irreversible covalent inhibitor of HER2, EGFR, and HER4; only HER2 is in the requested target list.",
+      "fdaStatus": "FDA-approved for specified extended-adjuvant and metastatic HER2-positive breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 ExteNET and NALA evaluated HER2-directed treatment."
+    },
+    {
+      "drug": "Tucatinib",
+      "proteins": [
+        "HER2"
+      ],
+      "mechanism": "Relatively HER2-selective, reversible kinase inhibitor.",
+      "fdaStatus": "FDA-approved with trastuzumab and capecitabine for specified previously treated HER2-positive advanced breast cancer, including eligible patients with brain metastases.",
+      "category": "mainstream",
+      "trialStatusForTargets": "The randomized HER2CLIMB trial evaluated HER2 inhibition in metastatic breast cancer, including patients with brain metastases."
+    },
+    {
+      "drug": "Capecitabine",
+      "proteins": [],
+      "mechanism": "Fluoropyrimidine prodrug converted to fluorouracil; metabolites inhibit thymidylate synthase and disrupt nucleic acids. No listed protein is its established direct therapeutic target.",
+      "fdaStatus": "FDA-approved for breast cancer and other malignancies.",
+      "category": "mainstream",
+      "trialStatusForTargets": "No known trials for these targets; extensively tested in breast cancer as chemotherapy, including HER2-directed combinations."
+    },
+    {
+      "drug": "Ado-trastuzumab emtansine (T-DM1)",
+      "proteins": [
+        "HER2"
+      ],
+      "mechanism": "The antibody binds HER2 and delivers DM1, which inhibits microtubules. Neither its payload nor its principal cytotoxic mechanism targets TOP1.",
+      "fdaStatus": "FDA-approved for specified HER2-positive early and metastatic breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 EMILIA and KATHERINE evaluated HER2-directed ADC delivery."
+    },
+    {
+      "drug": "DM1 (emtansine payload)",
+      "proteins": [],
+      "mechanism": "Maytansinoid payload that binds tubulin and disrupts microtubules; tubulin is outside the requested target list.",
+      "fdaStatus": "Not separately FDA-approved as a standalone drug; an approved ADC payload in T-DM1.",
+      "category": "mainstream",
+      "trialStatusForTargets": "No known trials for these targets; clinically tested as the microtubule-directed payload of T-DM1, not as a HER2- or TOP1-binding drug."
+    },
+    {
+      "drug": "Fam-trastuzumab deruxtecan-nxki (T-DXd; trastuzumab deruxtecan)",
+      "proteins": [
+        "HER2",
+        "TOP1"
+      ],
+      "mechanism": "The antibody binds HER2; released DXd payload stabilizes TOP1-DNA cleavage complexes. HER2 targeting and TOP1 poisoning occur through different ADC components.",
+      "fdaStatus": "FDA-approved for specified HER2-positive, HER2-low, and selected HR-positive HER2-ultralow breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 DESTINY-Breast trials evaluated HER2-directed delivery of a TOP1-inhibitory payload, including HER2-low and ultralow populations."
+    },
+    {
+      "drug": "DXd (deruxtecan payload)",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "TOP1 poison that stabilizes TOP1-DNA cleavage complexes; does not itself bind HER2 or TROP2 for delivery.",
+      "fdaStatus": "Not separately FDA-approved as a standalone drug; used as a payload in approved ADCs.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Clinically tested as a TOP1-inhibitory ADC payload in the DESTINY-Breast and TROPION-Breast programs; this is not evidence of approval as free DXd."
+    },
+    {
+      "drug": "Alpelisib",
+      "proteins": [
+        "PIK3CA"
+      ],
+      "mechanism": "Selective inhibition of the PI3K p110-alpha catalytic subunit.",
+      "fdaStatus": "FDA-approved with fulvestrant for specified PIK3CA-mutated, HR-positive, HER2-negative advanced or metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 SOLAR-1 evaluated PI3K-alpha inhibition in PIK3CA-mutated advanced breast cancer."
+    },
+    {
+      "drug": "Inavolisib",
+      "proteins": [
+        "PIK3CA"
+      ],
+      "mechanism": "Selective PI3K-alpha inhibitor that also promotes degradation of mutant p110-alpha.",
+      "fdaStatus": "FDA-approved in October 2024 with palbociclib and fulvestrant for specified endocrine-resistant, PIK3CA-mutated advanced breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 INAVO120 evaluated PI3K-alpha targeting with palbociclib and fulvestrant in PIK3CA-mutated advanced breast cancer."
+    },
+    {
+      "drug": "Capivasertib",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "ATP-competitive pan-AKT inhibitor targeting AKT1, AKT2, and AKT3. PIK3CA and PTEN alterations are selection biomarkers, not additional direct binding targets.",
+      "fdaStatus": "FDA-approved with fulvestrant for specified HR-positive, HER2-negative advanced breast cancer with qualifying PIK3CA, AKT1, or PTEN alterations.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 CAPItello-291 evaluated AKT inhibition in advanced breast cancer, including tumors with qualifying pathway alterations."
+    },
+    {
+      "drug": "Ipatasertib",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "ATP-competitive pan-AKT inhibitor; does not directly restore or inhibit PTEN.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 LOTUS and Phase 3 IPATunity170/IPATunity130 studied AKT inhibition in breast cancer; an established clinical benefit was not demonstrated across these settings."
+    },
+    {
+      "drug": "Everolimus",
+      "proteins": [
+        "mTOR"
+      ],
+      "mechanism": "Binds FKBP12; the resulting complex engages mTOR and predominantly allosterically inhibits mTORC1.",
+      "fdaStatus": "FDA-approved with exemestane for specified previously treated advanced HR-positive, HER2-negative breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 BOLERO-2 evaluated mTOR inhibition with exemestane in advanced breast cancer."
+    },
+    {
+      "drug": "Sapanisertib",
+      "proteins": [
+        "mTOR"
+      ],
+      "mechanism": "ATP-competitive catalytic mTOR inhibitor targeting both mTORC1 and mTORC2.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied in early-phase and Phase 2 trials of mTOR inhibition, including endocrine-therapy combinations in advanced breast cancer."
+    },
+    {
+      "drug": "Vistusertib",
+      "proteins": [
+        "mTOR"
+      ],
+      "mechanism": "ATP-competitive catalytic inhibitor of mTORC1 and mTORC2.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 MANTA evaluated mTOR inhibition with fulvestrant in ER-positive advanced breast cancer."
+    },
+    {
+      "drug": "Metformin",
+      "proteins": [],
+      "mechanism": "Antidiabetic drug affecting mitochondrial energetics and systemic insulin signaling, with possible AMPK-associated suppression of mTORC1; not an established direct mTOR binder.",
+      "fdaStatus": "FDA-approved for type 2 diabetes; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials establishing direct binding to the listed targets. Phase 3 MA.32 tested breast cancer repurposing, not direct mTOR inhibition, and did not establish broad benefit in patients without diabetes."
+    },
+    {
+      "drug": "Palbociclib",
+      "proteins": [
+        "CDK4",
+        "CDK6"
+      ],
+      "mechanism": "ATP-site CDK4/6 inhibitor that indirectly reduces RB phosphorylation; does not directly bind RB1 or inhibit cyclin D.",
+      "fdaStatus": "FDA-approved in specified combinations for HR-positive, HER2-negative advanced or metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 PALOMA trials evaluated CDK4/6 inhibition in advanced breast cancer; INAVO120 evaluated its combination with inavolisib and fulvestrant."
+    },
+    {
+      "drug": "Ribociclib",
+      "proteins": [
+        "CDK4",
+        "CDK6"
+      ],
+      "mechanism": "ATP-site CDK4/6 inhibitor that reduces RB phosphorylation indirectly.",
+      "fdaStatus": "FDA-approved for specified advanced breast cancer regimens and with an aromatase inhibitor for selected high-risk stage II-III early breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 MONALEESA trials and the adjuvant NATALEE trial evaluated CDK4/6 inhibition."
+    },
+    {
+      "drug": "Abemaciclib",
+      "proteins": [
+        "CDK4",
+        "CDK6"
+      ],
+      "mechanism": "ATP-site CDK4/6 inhibitor that indirectly maintains growth-suppressive hypophosphorylated RB.",
+      "fdaStatus": "FDA-approved for specified advanced breast cancer settings and with endocrine therapy for selected high-risk, node-positive early breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 MONARCH, monarchE, and postMONARCH trials evaluated CDK4/6 inhibition, including adjuvant treatment and treatment after prior CDK4/6 inhibition."
+    },
+    {
+      "drug": "Pembrolizumab",
+      "proteins": [
+        "PD-1"
+      ],
+      "mechanism": "Antibody binding PD-1 and blocking its interactions with PD-L1 and PD-L2; does not directly bind PD-L1.",
+      "fdaStatus": "FDA-approved for specified high-risk early TNBC and PD-L1 CPS ≥10 unresectable or metastatic TNBC regimens; additional tumor-agnostic indications may apply.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 KEYNOTE-522 and KEYNOTE-355 evaluated PD-1 blockade in early and advanced TNBC."
+    },
+    {
+      "drug": "Atezolizumab",
+      "proteins": [
+        "PD-L1"
+      ],
+      "mechanism": "Antibody directly binding PD-L1 to block inhibitory immune signaling.",
+      "fdaStatus": "FDA-approved for other malignancies; its former US breast cancer indication with nab-paclitaxel was withdrawn.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 IMpassion130 and IMpassion131 evaluated PD-L1 blockade in advanced TNBC; trial testing does not imply a current US breast cancer indication."
+    },
+    {
+      "drug": "Nab-paclitaxel",
+      "proteins": [],
+      "mechanism": "Albumin-bound paclitaxel that binds tubulin and stabilizes microtubules; none of the requested proteins is its established direct target.",
+      "fdaStatus": "FDA-approved for breast cancer and other malignancies; the atezolizumab breast cancer combination indication was withdrawn.",
+      "category": "mainstream",
+      "trialStatusForTargets": "No known trials for these targets as direct nab-paclitaxel targets; tested as chemotherapy alongside PD-L1 blockade in IMpassion130."
+    },
+    {
+      "drug": "Olaparib",
+      "proteins": [
+        "PARP"
+      ],
+      "mechanism": "Inhibits PARP1/2 catalytic activity and traps PARP-DNA complexes. Exploits BRCA-associated repair deficiency without directly binding BRCA1 or BRCA2 as therapeutic targets.",
+      "fdaStatus": "FDA-approved for specified germline BRCA-mutated, HER2-negative metastatic and high-risk early breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 OlympiAD and OlympiA evaluated PARP inhibition in germline BRCA-mutated breast cancer."
+    },
+    {
+      "drug": "Talazoparib",
+      "proteins": [
+        "PARP"
+      ],
+      "mechanism": "PARP1/2 catalytic inhibitor with potent PARP trapping; BRCA1/2 deficiency is a sensitivity context rather than a direct binding target.",
+      "fdaStatus": "FDA-approved for specified germline BRCA-mutated, HER2-negative locally advanced or metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 EMBRACA evaluated PARP inhibition in germline BRCA-mutated advanced breast cancer."
+    },
+    {
+      "drug": "Dabrafenib",
+      "proteins": [
+        "RAF"
+      ],
+      "mechanism": "Kinase inhibitor targeting mutant BRAF, including BRAF V600E; does not directly inhibit RAS, MEK, or ERK.",
+      "fdaStatus": "FDA-approved with trametinib for qualifying BRAF V600E-mutated solid tumors under a tumor-agnostic indication, as well as other specified indications; not a general breast cancer approval.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "BRAF V600E-directed trials include the Phase 2 ROAR and NCI-MATCH basket programs with trametinib; breast cancer applicability is molecularly selected."
+    },
+    {
+      "drug": "Trametinib",
+      "proteins": [
+        "MEK"
+      ],
+      "mechanism": "Allosteric MEK1/2 inhibitor.",
+      "fdaStatus": "FDA-approved with dabrafenib for qualifying BRAF V600E-mutated solid tumors under a tumor-agnostic indication and for other specified indications; not a general breast cancer approval.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "MEK inhibition has been tested in Phase 3 melanoma trials and Phase 2 BRAF-selected basket trials with dabrafenib, as well as investigational breast cancer combinations."
+    },
+    {
+      "drug": "Sotorasib",
+      "proteins": [
+        "RAS"
+      ],
+      "mechanism": "Covalently binds KRAS G12C in its GDP-bound state; not a pan-RAS inhibitor.",
+      "fdaStatus": "FDA-approved for specified KRAS G12C-mutated non-breast cancers; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "KRAS G12C inhibition has been tested in the CodeBreaK clinical program, including Phase 2 and Phase 3 NSCLC trials and colorectal cancer trials."
+    },
+    {
+      "drug": "Adagrasib",
+      "proteins": [
+        "RAS"
+      ],
+      "mechanism": "Covalent inhibitor of GDP-bound KRAS G12C; not a pan-RAS inhibitor.",
+      "fdaStatus": "FDA-approved for specified KRAS G12C-mutated non-breast cancers; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "KRAS G12C inhibition has been tested in the KRYSTAL clinical program, including NSCLC and colorectal cancer trials."
+    },
+    {
+      "drug": "Selumetinib",
+      "proteins": [
+        "MEK"
+      ],
+      "mechanism": "Allosteric MEK1/2 inhibitor.",
+      "fdaStatus": "FDA-approved for specified neurofibromatosis type 1-associated plexiform neurofibromas; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "MEK inhibition has been tested in NF1-associated plexiform neurofibroma trials and in breast cancer studies, including a randomized Phase 2 fulvestrant combination trial."
+    },
+    {
+      "drug": "Binimetinib",
+      "proteins": [
+        "MEK"
+      ],
+      "mechanism": "Allosteric MEK1/2 inhibitor.",
+      "fdaStatus": "FDA-approved with encorafenib for specified BRAF-mutated non-breast cancers; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "MEK inhibition has been tested in Phase 3 BRAF-mutated melanoma trials and early-phase breast cancer combination studies."
+    },
+    {
+      "drug": "Ulixertinib",
+      "proteins": [
+        "ERK"
+      ],
+      "mechanism": "ATP-competitive ERK1/2 inhibitor.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied in Phase 1 and Phase 2 trials targeting ERK signaling in advanced solid tumors, including molecularly selected MAPK-altered tumors."
+    },
+    {
+      "drug": "Ravoxertinib",
+      "proteins": [
+        "ERK"
+      ],
+      "mechanism": "ATP-competitive ERK1/2 inhibitor.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Studied in Phase 1 trials of ERK inhibition in advanced solid tumors."
+    },
+    {
+      "drug": "Anastrozole",
+      "proteins": [
+        "Aromatase"
+      ],
+      "mechanism": "Nonsteroidal reversible aromatase inhibitor interacting with the heme-containing catalytic site of CYP19A1; does not directly target ESR1.",
+      "fdaStatus": "FDA-approved for specified postmenopausal HR-positive breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Extensively tested in randomized aromatase-inhibition trials, including Phase 3 ATAC."
+    },
+    {
+      "drug": "Letrozole",
+      "proteins": [
+        "Aromatase"
+      ],
+      "mechanism": "Nonsteroidal reversible inhibitor of CYP19A1 that reduces estrogen synthesis.",
+      "fdaStatus": "FDA-approved for specified postmenopausal HR-positive breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Extensively tested in Phase 3 aromatase-inhibition trials, including BIG 1-98 and MA.17."
+    },
+    {
+      "drug": "Exemestane",
+      "proteins": [
+        "Aromatase"
+      ],
+      "mechanism": "Steroidal, mechanism-based irreversible aromatase inactivator.",
+      "fdaStatus": "FDA-approved for specified postmenopausal HR-positive breast cancer settings, including use with everolimus under the combination indication.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Tested in randomized aromatase-inhibition trials, including the Intergroup Exemestane Study and endocrine combinations such as BOLERO-2."
+    },
+    {
+      "drug": "Sacituzumab govitecan-hziy",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "The antibody binds TROP2, which is outside the requested target list, and delivers SN-38, which poisons TOP1. The antibody itself does not bind TOP1.",
+      "fdaStatus": "FDA-approved for specified previously treated unresectable or metastatic TNBC and HR-positive, HER2-negative breast cancer settings.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 ASCENT and TROPiCS-02 evaluated TROP2-directed delivery of a TOP1-inhibitory payload in breast cancer."
+    },
+    {
+      "drug": "SN-38",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Active irinotecan metabolite and sacituzumab govitecan payload that stabilizes TOP1-DNA cleavage complexes.",
+      "fdaStatus": "Not separately FDA-approved as a standalone drug; delivered by approved irinotecan products and sacituzumab govitecan.",
+      "category": "mainstream",
+      "trialStatusForTargets": "TOP1-directed clinical exposure occurs through irinotecan and investigational delivery formulations, and through the Phase 3 sacituzumab govitecan breast cancer programs."
+    },
+    {
+      "drug": "Datopotamab deruxtecan-dlnk",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "The antibody binds TROP2, outside the requested target list, and delivers a deruxtecan TOP1-inhibitory payload. TOP1 engagement is mediated by released payload.",
+      "fdaStatus": "The review reports FDA approval in January 2025 for eligible previously treated HR-positive, HER2-negative unresectable or metastatic breast cancer.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 TROPION-Breast01 evaluated TROP2-directed delivery of a TOP1-inhibitory payload."
+    },
+    {
+      "drug": "Irinotecan",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Prodrug converted to SN-38, the principal active TOP1 poison; TOP1 engagement is predominantly metabolite-mediated.",
+      "fdaStatus": "FDA-approved for colorectal cancer regimens; no established breast cancer indication.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "TOP1-directed treatment has been extensively tested in colorectal cancer and in Phase 2 breast cancer trials."
+    },
+    {
+      "drug": "Topotecan",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "TOP1 poison stabilizing TOP1-DNA cleavage complexes and preventing efficient DNA religation.",
+      "fdaStatus": "FDA-approved for specified ovarian, small-cell lung, and cervical cancer settings; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "TOP1-directed treatment has been tested in trials supporting its non-breast indications and in Phase 2 advanced breast cancer studies."
+    },
+    {
+      "drug": "Niclosamide",
+      "proteins": [],
+      "mechanism": "Anthelmintic with reported mitochondrial uncoupling and indirect modulation of signaling, including mTOR-associated pathways; the review does not establish direct binding to any requested protein.",
+      "fdaStatus": "Has FDA approval history as an anthelmintic; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets as established direct niclosamide targets; early oncology repurposing studies do not demonstrate selective direct mTOR inhibition."
+    },
+    {
+      "drug": "Resveratrol",
+      "proteins": [],
+      "mechanism": "Natural product discussed through a diabetic kidney disease study; the supplied evidence does not establish a therapeutically relevant direct interaction with any requested protein in breast cancer.",
+      "fdaStatus": "Not FDA-approved as a breast cancer treatment or as an anticancer drug.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets establishing the direct interactions proposed in this review; exploratory human studies do not establish target-specific breast cancer efficacy."
+    },
+    {
+      "drug": "Licorice flavonoid (unspecified)",
+      "proteins": [],
+      "mechanism": "Unspecified natural-product candidate discussed in a gastric-protection study; pathway modulation does not establish direct binding to any requested protein.",
+      "fdaStatus": "No FDA approval for an identifiable breast cancer drug is established by the supplied text.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets; the specific flavonoid is not identified."
+    },
+    {
+      "drug": "Chrysotoxine",
+      "proteins": [],
+      "mechanism": "Natural-product candidate discussed through cervical cancer findings; no validated direct interaction with the requested proteins is established in the supplied text.",
+      "fdaStatus": "Not FDA-approved as a breast cancer treatment.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets."
+    },
+    {
+      "drug": "Rapamycin (sirolimus)",
+      "proteins": [
+        "mTOR"
+      ],
+      "mechanism": "Named only within the FKBP12-rapamycin-binding domain terminology in the review. Pharmacologically, its FKBP12 complex allosterically inhibits mTORC1.",
+      "fdaStatus": "FDA-approved for non-breast-cancer indications, including transplant immunosuppression and lymphangioleiomyomatosis; not approved for breast cancer.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "mTOR inhibition has been studied in early-phase oncology trials, including breast cancer combinations; the supplied text does not discuss these trials."
+    },
+    {
+      "drug": "CID_5329102",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_11485656",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_208908",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3038522",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135398510",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_24867231",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_160355",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5494449",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3038525",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10113978",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_156414",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_216239",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_11712649",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_156422",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_6445562",
+      "proteins": [
+        "AKT1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "2,2-dichloro-1-phenylethanone",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "(2E,4E)-deca-2,4-dienal",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "tris(2-methylphenyl) phosphate",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "1-ethoxybutane",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "2-propan-2-ylaniline",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_54680691",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_54675779",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "1-methylphenanthrene",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "hydroxy(triphenyl)silane",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "2-ethylhexyl carbonochloridate",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_11650986",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "N,N-diethylethanamine",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "furan-2-ylmethanethiol",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_520263",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_45358975",
+      "proteins": [
+        "PTEN"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44270638",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5330922",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5330920",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5330921",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5330918",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135402863",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135402865",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135402866",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135402867",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135402864",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_6539284",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_6539295",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_6539301",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_6539304",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_447960",
+      "proteins": [
+        "CDK4"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135875593",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135863110",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135922684",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_108481028",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_137652145",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_114543854",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_2867795",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_137644809",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_137650193",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_137638921",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_137631791",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_137638910",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_137644810",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_65333592",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44259",
+      "proteins": [
+        "RB1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_299",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "1,10-phenanthroline",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_1400",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_1546",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_2203",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_2247",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "5-chloro-7-iodoquinolin-8-ol",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_2833",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3037",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3396",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3598",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3611",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "5,7-diiodoquinolin-8-ol",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3926",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_4066",
+      "proteins": [
+        "BRCA1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10460355",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10452851",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10133241",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761134",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761114",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761111",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761137",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14680465",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761127",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_60700",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761156",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761163",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761109",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761147",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_14761142",
+      "proteins": [
+        "TOP1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    }
+  ],
+  "warnings": [
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/ESR1/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "ESR1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PGR/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PGR"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PIK3CA/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PIK3CA"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/mTOR/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "mTOR"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/CDK6/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "CDK6"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/Cyclin/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "Cyclin D"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PD-1/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PD-1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PARP/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PARP"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/RAS/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "RAS"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/RAF/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "RAF"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/MEK/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "MEK"
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import type {
   ChatAction,
 } from "@/lib/types"
 import type { FailureWarning } from "@/lib/retry"
+import { describeNotDocked } from "@/lib/protein-match"
 import { describeWarnings, errorMessageFrom } from "@/lib/warnings"
 import { pollDockJobUntilDone } from "@/lib/dock-polling"
 import { chunkDockTargets, dockInBatches } from "@/lib/dock-batches"
@@ -385,6 +386,8 @@ export default function Home() {
           throw new Error(`Structures API error: ${structRes.status}`)
 
         const collectedTargets: DockingTarget[] = []
+        // What the structures step left out of docking (sent in its "complete" event).
+        let notDocked = { proteinsWithoutDrugs: [] as string[], drugsWithoutProtein: [] as string[] }
 
         try {
           await readSSEStream(structRes, (event) => {
@@ -406,6 +409,10 @@ export default function Home() {
               const finalTargets =
                 (event.targets as DockingTarget[]) || collectedTargets
               setTargets(finalTargets)
+              notDocked = {
+                proteinsWithoutDrugs: (event.proteinsWithoutDrugs as string[]) ?? [],
+                drugsWithoutProtein: (event.drugsWithoutProtein as string[]) ?? [],
+              }
             } else if (event.type === "warning") {
               failedCalls.push(event.warning as FailureWarning)
             }
@@ -457,7 +464,8 @@ export default function Home() {
               return display
             })
         )
-        const undockableCount = reviewDrugs.length - dockableDrugs.length
+        // Drugs the review listed for none of the proteins are left out for that reason, not for a missing structure.
+        const undockableCount = Math.max(0, reviewDrugs.length - notDocked.drugsWithoutProtein.length - dockableDrugs.length)
 
         setDrugs(dockableDrugs)
         setSelectedDrugIds(new Set(dockableDrugs.map((d) => d.id)))
@@ -469,6 +477,8 @@ export default function Home() {
         const undockableNote = undockableCount > 0
           ? `\n\n${undockableCount} drug${undockableCount === 1 ? " was" : "s were"} excluded because no molecular structure was available${failedCalls.length > 0 ? " (not found, or the lookup failed: see below)" : ""}.`
           : ""
+        const notDockedText = describeNotDocked(notDocked)
+        const notDockedNote = notDockedText ? `\n\n${notDockedText}` : ""
         // A failed call is not the same as "nothing found": say so, so a missing
         // drug or structure is not mistaken for a negative result.
         const failedNote = failedCalls.length > 0
@@ -476,7 +486,7 @@ export default function Home() {
           : ""
         addMessage(
           "assistant",
-          `Analysis complete! I analyzed ${papersAnalyzed} papers and found ${reviewProteins.length} protein targets with ${dockableDrugs.length} dockable candidates.${undockableNote}${failedNote}\n\nAll dockable drugs are selected. You can deselect any from the table, then choose how to proceed.`,
+          `Analysis complete! I analyzed ${papersAnalyzed} papers and found ${reviewProteins.length} protein targets with ${dockableDrugs.length} dockable candidates.${undockableNote}${notDockedNote}${failedNote}\n\nAll dockable drugs are selected. You can deselect any from the table, then choose how to proceed.`,
           [
             {
               id: "dock-all",

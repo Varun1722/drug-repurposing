@@ -1,0 +1,877 @@
+{
+  "disease": "Alzheimer's disease",
+  "recordedAt": "2026-10-15T16:46:22.958Z",
+  "proteins": [
+    "Aβ",
+    "APP",
+    "BACE1",
+    "γ-secretase",
+    "α-secretase",
+    "PSEN1",
+    "PSEN2",
+    "MAPT",
+    "TREM2",
+    "sTREM2",
+    "TYROBP",
+    "ACHE",
+    "BCHE",
+    "NMDA receptor",
+    "APOE",
+    "NEFL",
+    "GFAP",
+    "Synuclein",
+    "TARDBP",
+    "PD-1"
+  ],
+  "drugs": [
+    {
+      "drug": "Lecanemab (Leqembi)",
+      "proteins": [
+        "Aβ"
+      ],
+      "mechanism": "Antibody preferentially binding soluble aggregated Aβ, particularly protofibrils, and promoting amyloid clearance.",
+      "fdaStatus": "FDA-approved for AD; accelerated approval January 2023 and traditional approval July 2023.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 trials targeting aggregated Aβ in early symptomatic AD supported approval."
+    },
+    {
+      "drug": "Donanemab (Kisunla)",
+      "proteins": [
+        "Aβ"
+      ],
+      "mechanism": "Antibody recognizing N-terminal pyroglutamate-modified Aβ enriched in plaques and promoting plaque clearance.",
+      "fdaStatus": "FDA-approved for AD in July 2024.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 trials targeting plaque-associated Aβ in early symptomatic AD supported approval."
+    },
+    {
+      "drug": "Aducanumab (Aduhelm)",
+      "proteins": [
+        "Aβ"
+      ],
+      "mechanism": "Antibody binding aggregated Aβ, including oligomeric and fibrillar species.",
+      "fdaStatus": "Historical FDA accelerated approval for AD in June 2021; commercialization and development subsequently discontinued.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Phase 3 trials targeting aggregated Aβ in early AD; clinical results were inconsistent."
+    },
+    {
+      "drug": "Valiltramiprosate (ALZ-801)",
+      "proteins": [
+        "Aβ"
+      ],
+      "mechanism": "Oral prodrug of tramiprosate intended to inhibit toxic Aβ oligomer formation; the Aβ interaction is mediated by its active drug.",
+      "fdaStatus": "Not FDA-approved for AD according to the supplied review.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Evaluated through Phase 3 for prevention of Aβ oligomer formation in early AD."
+    },
+    {
+      "drug": "Tramiprosate",
+      "proteins": [
+        "Aβ"
+      ],
+      "mechanism": "Aβ-interacting small molecule intended to inhibit oligomer formation; active drug delivered by valiltramiprosate.",
+      "fdaStatus": "Not FDA-approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 AD trials evaluated its Aβ-directed anti-aggregation approach without establishing efficacy in the overall trial population."
+    },
+    {
+      "drug": "Solanezumab",
+      "proteins": [
+        "Aβ"
+      ],
+      "mechanism": "Antibody preferentially binding soluble monomeric Aβ.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 treatment and prevention trials targeting soluble Aβ did not establish clinical benefit."
+    },
+    {
+      "drug": "Gantenerumab",
+      "proteins": [
+        "Aβ"
+      ],
+      "mechanism": "Antibody recognizing aggregated Aβ and promoting amyloid removal.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 trials targeting aggregated Aβ in early AD did not establish clinical benefit."
+    },
+    {
+      "drug": "Buntanetap (posiphen)",
+      "proteins": [],
+      "mechanism": "Investigational translational regulator intended to reduce APP and other neurodegeneration-associated proteins; direct binding to APP protein is not established.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Clinical trials in AD have evaluated the protein-production-lowering strategy, including Phase 2/3 studies; these do not establish direct APP-protein binding."
+    },
+    {
+      "drug": "APP-directed antisense oligonucleotides (unspecified agents)",
+      "proteins": [],
+      "mechanism": "Target APP RNA to reduce APP expression rather than bind APP protein.",
+      "fdaStatus": "No FDA-approved APP-directed AD treatment identified.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No specific agent or clinical-trial phase is identified in the supplied text; direct APP-protein binding is not the intended mechanism."
+    },
+    {
+      "drug": "Verubecestat",
+      "proteins": [
+        "BACE1"
+      ],
+      "mechanism": "BACE1 inhibition reduces amyloidogenic APP cleavage and Aβ production.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 trials for BACE1 inhibition in AD were stopped for lack of benefit and concerns including cognitive worsening."
+    },
+    {
+      "drug": "Lanabecestat",
+      "proteins": [
+        "BACE1"
+      ],
+      "mechanism": "BACE1 inhibition reduces Aβ production.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2/3 and Phase 3 AD trials of BACE1 inhibition were terminated for futility."
+    },
+    {
+      "drug": "Atabecestat",
+      "proteins": [
+        "BACE1"
+      ],
+      "mechanism": "BACE1 inhibition reduces amyloidogenic APP processing.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Clinical development, including a Phase 2b/3 prevention study, tested BACE1 inhibition; the program was stopped amid liver toxicity and cognitive safety concerns."
+    },
+    {
+      "drug": "Elenbecestat",
+      "proteins": [
+        "BACE1"
+      ],
+      "mechanism": "BACE1 inhibition reduces Aβ production.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 trials of BACE1 inhibition in early AD were terminated because of an unfavorable benefit-risk assessment."
+    },
+    {
+      "drug": "Umibecestat",
+      "proteins": [
+        "BACE1"
+      ],
+      "mechanism": "BACE1 inhibition reduces amyloidogenic APP processing.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2/3 prevention trials of BACE1 inhibition were stopped following cognitive worsening and other safety concerns."
+    },
+    {
+      "drug": "Semagacestat",
+      "proteins": [
+        "γ-secretase"
+      ],
+      "mechanism": "Broad γ-secretase inhibition; effects on presenilin-containing complexes do not establish PSEN1 or PSEN2 selectivity.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 trials of γ-secretase inhibition in AD were stopped because of worsening outcomes and toxicity."
+    },
+    {
+      "drug": "Avagacestat",
+      "proteins": [
+        "γ-secretase"
+      ],
+      "mechanism": "γ-Secretase inhibitor developed to favor inhibition of APP processing over Notch processing; not established as presenilin-isoform selective.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 trials of γ-secretase inhibition in AD did not establish a favorable benefit-risk profile."
+    },
+    {
+      "drug": "Tarenflurbil",
+      "proteins": [
+        "γ-secretase"
+      ],
+      "mechanism": "Investigated as a γ-secretase modulator intended to alter Aβ product distribution; direct complex binding and adequate brain target engagement were not established by the review.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 AD trial of the proposed γ-secretase-modulating strategy failed to demonstrate efficacy."
+    },
+    {
+      "drug": "BPN14770 (zatolmilast)",
+      "proteins": [],
+      "mechanism": "Phosphodiesterase-4D inhibitor, not a γ-secretase modulator; no direct interaction with a requested protein is established.",
+      "fdaStatus": "Investigational; no FDA approval identified in the supplied review.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets; clinical investigation concerns PDE4D inhibition rather than the listed proteins."
+    },
+    {
+      "drug": "BPN15606",
+      "proteins": [
+        "γ-secretase"
+      ],
+      "mechanism": "Investigational γ-secretase modulator intended to shift APP cleavage toward shorter Aβ peptides rather than broadly inhibit proteolysis.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No clinical-trial phase for this specific compound is established by the supplied text."
+    },
+    {
+      "drug": "Nirogacestat",
+      "proteins": [
+        "γ-secretase"
+      ],
+      "mechanism": "γ-Secretase inhibitor; oncology use does not establish suitability for chronic AD treatment or presenilin-isoform selectivity.",
+      "fdaStatus": "FDA-approved for adults with progressing desmoid tumors requiring systemic treatment; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 trials tested γ-secretase inhibition in desmoid tumors and supported approval; no established AD efficacy."
+    },
+    {
+      "drug": "Acitretin",
+      "proteins": [],
+      "mechanism": "Retinoid-dependent transcriptional regulation can increase ADAM10/α-secretase expression; not an established direct α-secretase ligand.",
+      "fdaStatus": "FDA-approved for severe psoriasis; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "A small randomized AD clinical study evaluated indirect enhancement of nonamyloidogenic APP processing; it did not establish direct α-secretase binding."
+    },
+    {
+      "drug": "Bryostatin-1",
+      "proteins": [],
+      "mechanism": "Protein kinase C modulator investigated for synaptic effects and nonamyloidogenic APP processing; not a selective α-secretase ligand.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 AD trials evaluated PKC-mediated effects, not direct binding to a listed protein."
+    },
+    {
+      "drug": "BIIB080 (MAPT_Rx)",
+      "proteins": [],
+      "mechanism": "Antisense oligonucleotide targeting MAPT RNA to reduce tau production; does not directly bind tau protein.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 1b and Phase 2 AD studies evaluate MAPT transcript reduction and tau lowering, not direct MAPT-protein binding."
+    },
+    {
+      "drug": "Semorinemab",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Antibody binding tau epitopes, intended to affect extracellular tau pathology and propagation.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 trials targeting tau in AD have not established consistent clinical benefit."
+    },
+    {
+      "drug": "Gosuranemab",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Anti-tau antibody intended to limit extracellular tau-mediated pathology.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 trial targeting tau in early AD did not demonstrate clinical benefit."
+    },
+    {
+      "drug": "Tilavonemab",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Anti-tau antibody intended to reduce extracellular tau propagation.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 trial targeting tau in early AD did not establish efficacy."
+    },
+    {
+      "drug": "Bepranemab",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Antibody recognizing a tau epitope and intended to limit pathological tau propagation.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Evaluated in a Phase 2 trial targeting tau in early AD; clinical benefit is not established by the supplied review."
+    },
+    {
+      "drug": "Hydromethylthionine formulations (including LMTM)",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Proposed tau aggregation inhibition; the intended protein interaction should not be treated as proof of clinical efficacy.",
+      "fdaStatus": "Not FDA-approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 3 AD trials have evaluated tau aggregation inhibition; efficacy remains unestablished in the supplied review."
+    },
+    {
+      "drug": "Lithium",
+      "proteins": [],
+      "mechanism": "Indirect tau-pathway modulation through mechanisms including GSK3 inhibition; not a selective tau ligand.",
+      "fdaStatus": "FDA-approved for bipolar disorder; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Small clinical trials in AD or mild cognitive impairment have evaluated indirect disease-modifying effects, including tau-related biomarkers; no established direct MAPT-targeting trial."
+    },
+    {
+      "drug": "AL002",
+      "proteins": [
+        "TREM2"
+      ],
+      "mechanism": "Agonist antibody intended to enhance membrane TREM2 signaling; activity against sTREM2 should not be inferred from this description.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 trial of TREM2 agonism in early AD did not demonstrate clinical efficacy."
+    },
+    {
+      "drug": "Recombinant sTREM2 (unspecified construct)",
+      "proteins": [],
+      "mechanism": "Supplies soluble TREM2 ectodomain activity; sTREM2 is the administered therapeutic protein, not an established binding target of itself.",
+      "fdaStatus": "No FDA-approved sTREM2 treatment for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Predominantly preclinical in the supplied review; no clinical trial of a specified recombinant sTREM2 product is identified."
+    },
+    {
+      "drug": "Fostamatinib",
+      "proteins": [],
+      "mechanism": "Prodrug whose active metabolite R406 inhibits SYK downstream of TYROBP-associated signaling; not a TYROBP-binding drug.",
+      "fdaStatus": "FDA-approved for chronic immune thrombocytopenia; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets; established clinical use concerns SYK inhibition rather than direct TYROBP targeting."
+    },
+    {
+      "drug": "R406",
+      "proteins": [],
+      "mechanism": "Active metabolite of fostamatinib that inhibits SYK; downstream modulation does not establish TYROBP binding.",
+      "fdaStatus": "Active metabolite of FDA-approved fostamatinib; not separately identified as an approved AD drug.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets."
+    },
+    {
+      "drug": "Donepezil",
+      "proteins": [
+        "ACHE"
+      ],
+      "mechanism": "Reversible, predominantly acetylcholinesterase-selective inhibition increases cholinergic neurotransmission.",
+      "fdaStatus": "FDA-approved symptomatic treatment for AD.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Multiple randomized clinical trials of ACHE inhibition in AD supported approval."
+    },
+    {
+      "drug": "Galantamine",
+      "proteins": [
+        "ACHE"
+      ],
+      "mechanism": "Reversible competitive acetylcholinesterase inhibition; not an equipotent ACHE/BCHE inhibitor at therapeutic exposure.",
+      "fdaStatus": "FDA-approved for mild-to-moderate AD dementia.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Randomized clinical trials of ACHE inhibition in AD supported approval."
+    },
+    {
+      "drug": "Rivastigmine",
+      "proteins": [
+        "ACHE",
+        "BCHE"
+      ],
+      "mechanism": "Carbamate-mediated inhibition of acetylcholinesterase and butyrylcholinesterase.",
+      "fdaStatus": "FDA-approved symptomatic treatment for AD.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Randomized AD trials evaluated dual cholinesterase inhibition and supported approval; individual contributions of ACHE and BCHE inhibition were not necessarily isolated."
+    },
+    {
+      "drug": "Benzgalantamine (Zunveyl)",
+      "proteins": [
+        "ACHE"
+      ],
+      "mechanism": "Prodrug converted to galantamine; ACHE inhibition is mediated by the active drug rather than established direct binding by benzgalantamine.",
+      "fdaStatus": "FDA-approved in 2024 for mild-to-moderate dementia of the Alzheimer’s type.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Approval relies on delivery of galantamine and its established ACHE-directed clinical evidence, with supporting pharmacokinetic studies rather than a separate demonstration of direct prodrug binding."
+    },
+    {
+      "drug": "Tacrine",
+      "proteins": [
+        "ACHE",
+        "BCHE"
+      ],
+      "mechanism": "Inhibits both acetylcholinesterase and butyrylcholinesterase; use was limited by hepatotoxicity.",
+      "fdaStatus": "Historical FDA-approved AD treatment; no longer routinely marketed or used.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Clinical trials of cholinesterase inhibition in AD supported historical approval."
+    },
+    {
+      "drug": "Bisnorcymserine",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Investigational selective butyrylcholinesterase inhibitor.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No clinical-trial phase or completed target-specific trial is established in the supplied text."
+    },
+    {
+      "drug": "Memantine",
+      "proteins": [
+        "NMDA receptor"
+      ],
+      "mechanism": "Low-to-moderate-affinity, voltage-dependent, uncompetitive open-channel NMDA receptor blocker.",
+      "fdaStatus": "FDA-approved for moderate-to-severe AD.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Randomized trials of NMDA receptor blockade in moderate-to-severe AD supported approval."
+    },
+    {
+      "drug": "Memantine/donepezil fixed-dose combination",
+      "proteins": [
+        "NMDA receptor",
+        "ACHE"
+      ],
+      "mechanism": "Combines memantine-mediated NMDA receptor channel blockade with donepezil-mediated ACHE inhibition.",
+      "fdaStatus": "FDA-approved fixed-dose symptomatic treatment for moderate-to-severe AD.",
+      "category": "mainstream",
+      "trialStatusForTargets": "Clinical studies evaluated combined NMDA receptor blockade and ACHE inhibition in AD; the fixed-dose product also relies on component efficacy and pharmacokinetic bridging."
+    },
+    {
+      "drug": "Dextromethorphan",
+      "proteins": [
+        "NMDA receptor"
+      ],
+      "mechanism": "NMDA-related antagonist pharmacology, substantially mediated by its metabolite dextrorphan; not an established AD cognitive treatment.",
+      "fdaStatus": "FDA-approved in antitussive products and certain combination products for other indications; not approved as an AD cognitive treatment.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Dextromethorphan-containing combinations have been studied for AD-associated agitation; these studies do not isolate NMDA receptor-specific efficacy."
+    },
+    {
+      "drug": "Amantadine",
+      "proteins": [
+        "NMDA receptor"
+      ],
+      "mechanism": "Has NMDA receptor antagonist activity among its pharmacological actions; shared pharmacology with memantine does not establish AD efficacy.",
+      "fdaStatus": "FDA-approved for non-AD indications, including parkinsonism; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No target-specific AD clinical trial is established in the supplied text."
+    },
+    {
+      "drug": "Bexarotene",
+      "proteins": [],
+      "mechanism": "RXR agonist investigated for indirect enhancement of APOE-related lipid transport pathways; does not directly target APOE protein.",
+      "fdaStatus": "FDA-approved for cutaneous T-cell lymphoma; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "A small AD clinical trial evaluated the RXR/APOE-pathway hypothesis; direct APOE binding and clinical benefit were not established."
+    },
+    {
+      "drug": "LX1001",
+      "proteins": [],
+      "mechanism": "APOE2 gene-delivery therapy intended to alter CNS APOE isoform biology; not a drug that binds existing APOE protein.",
+      "fdaStatus": "Investigational; not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 1/2 clinical investigation of APOE2 gene delivery in APOE ε4 homozygotes with AD; this is isoform supplementation, not direct protein binding."
+    },
+    {
+      "drug": "APOE-directed antisense oligonucleotides (unspecified agents)",
+      "proteins": [],
+      "mechanism": "Target APOE RNA to reduce expression rather than bind APOE protein.",
+      "fdaStatus": "No FDA-approved APOE-directed AD treatment identified.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Described as preclinical in the supplied text; no named clinical agent or trial is identified."
+    },
+    {
+      "drug": "Prasinezumab",
+      "proteins": [
+        "Synuclein"
+      ],
+      "mechanism": "Antibody binding α-synuclein, encoded by SNCA; developed primarily for synucleinopathies.",
+      "fdaStatus": "Not FDA-approved according to the supplied review.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 clinical trials targeting α-synuclein in Parkinson’s disease; not an established AD treatment."
+    },
+    {
+      "drug": "Cinpanemab",
+      "proteins": [
+        "Synuclein"
+      ],
+      "mechanism": "Anti-α-synuclein antibody developed for synucleinopathies.",
+      "fdaStatus": "Not FDA-approved.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Phase 2 trial targeting α-synuclein in Parkinson’s disease did not establish efficacy; not an established AD treatment."
+    },
+    {
+      "drug": "Ambroxol",
+      "proteins": [],
+      "mechanism": "Mucolytic investigated as a glucocerebrosidase chaperone; effects on α-synuclein handling are indirect, not validated α-synuclein binding.",
+      "fdaStatus": "Not FDA-approved; used as a mucolytic in some countries.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Clinical studies in Parkinson’s disease and related conditions evaluate glucocerebrosidase enhancement, not direct binding to a listed protein."
+    },
+    {
+      "drug": "Riluzole",
+      "proteins": [],
+      "mechanism": "ALS drug with glutamatergic and other neuronal effects; not established as a direct TDP-43/TARDBP therapy or a direct binder of a requested protein.",
+      "fdaStatus": "FDA-approved for ALS; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No established clinical trials specifically targeting TARDBP through direct riluzole binding; AD investigation does not establish that mechanism."
+    },
+    {
+      "drug": "Pembrolizumab",
+      "proteins": [
+        "PD-1"
+      ],
+      "mechanism": "Antibody directly blocking the inhibitory immune receptor PD-1; AD repurposing is an experimental immune-clearance hypothesis.",
+      "fdaStatus": "FDA-approved for multiple oncology indications; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Extensive clinical trials, including Phase 3, establish PD-1 blockade in cancer; no clinically established AD benefit."
+    },
+    {
+      "drug": "Nivolumab",
+      "proteins": [
+        "PD-1"
+      ],
+      "mechanism": "Antibody directly blocking PD-1; proposed AD effects are experimental and accompanied by substantial immune-mediated toxicity risks.",
+      "fdaStatus": "FDA-approved for multiple oncology indications; not approved for AD.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "Extensive clinical trials, including Phase 3, establish PD-1 blockade in cancer; no clinically established AD benefit."
+    },
+    {
+      "drug": "Guilingji",
+      "proteins": [],
+      "mechanism": "Multicomponent herbal preparation; network pharmacology does not establish a validated interaction with any requested protein.",
+      "fdaStatus": "No FDA approval established in the supplied text.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets; the supplied text provides no target-specific clinical evidence."
+    },
+    {
+      "drug": "Ergotamine",
+      "proteins": [],
+      "mechanism": "Named computational multitarget screening hit. The panel included several requested proteins, but drug-specific target assignments, binding measurements, and functional effects were not supplied.",
+      "fdaStatus": "The excerpt describes an approved-drug screening library but does not independently document ergotamine’s FDA status or indication.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets; the supplied evidence is incompletely specified virtual screening without an assignable drug-protein pair."
+    },
+    {
+      "drug": "Dihydroergotamine",
+      "proteins": [],
+      "mechanism": "Named computational multitarget screening hit; membership in the screened protein panel does not establish binding to any individual requested protein.",
+      "fdaStatus": "The excerpt describes an approved-drug screening library but does not independently document dihydroergotamine’s FDA status or indication.",
+      "category": "repurposing_candidate",
+      "trialStatusForTargets": "No known trials for these targets; the supplied evidence is incompletely specified virtual screening without drug-specific target validation."
+    },
+    {
+      "drug": "CID_22319604",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_46881853",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_54581340",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_70694381",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_56950118",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_56950117",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_57176479",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_70697093",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_70688786",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_70686684",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_57379031",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_67973354",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_67973277",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_71459376",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3883",
+      "proteins": [
+        "MAPT"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44358068",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10255032",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44364861",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10961666",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44364908",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44358110",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_11113449",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3004425",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44364863",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44358179",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5983",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_402662",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_205772",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_402660",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10774819",
+      "proteins": [
+        "BCHE"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    }
+  ],
+  "warnings": [
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/APP/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "APP"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/BACE1/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "BACE1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PSEN1/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PSEN1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PSEN2/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PSEN2"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/TREM2/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "TREM2"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/ACHE/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "ACHE"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/APOE/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "APOE"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/GFAP/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "GFAP"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/Synuclein/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "Synuclein"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/TARDBP/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "TARDBP"
+    }
+  ]
+}

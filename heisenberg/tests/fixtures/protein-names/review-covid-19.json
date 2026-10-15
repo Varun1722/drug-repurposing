@@ -1,0 +1,472 @@
+{
+  "disease": "COVID-19",
+  "recordedAt": "2026-10-15T16:53:48.825Z",
+  "proteins": [
+    "Spike",
+    "Mpro",
+    "PLpro",
+    "RdRp",
+    "ACE2",
+    "TMPRSS2",
+    "Cathepsins",
+    "IL6R",
+    "JAK1",
+    "JAK2",
+    "IFNAR",
+    "IFN-α2b",
+    "PD-1",
+    "IL17A",
+    "Ferritin",
+    "CD7"
+  ],
+  "drugs": [
+    {
+      "drug": "CID_44328238",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_130842",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376945",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376922",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376705",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376688",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376665",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44377126",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376860",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44364646",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376881",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10458734",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376661",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44377139",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_44376704",
+      "proteins": [
+        "ACE2"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5329102",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_135398510",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_24867231",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3038522",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_160355",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_156422",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_11485656",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_208908",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_5494449",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_3038525",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_6445562",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_216239",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_11712649",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_10113978",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_156414",
+      "proteins": [
+        "JAK1"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_51035449",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_154984068",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_154642692",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_154642761",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_154642758",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_154642705",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_154642651",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_162679323",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_164618188",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_164622268",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_164612816",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_164616712",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_164618645",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_134823381",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    },
+    {
+      "drug": "CID_134823378",
+      "proteins": [
+        "IL17A"
+      ],
+      "mechanism": "Bioactive compound — PubChem target search",
+      "fdaStatus": "Unknown — requires verification",
+      "category": "repurposing_candidate"
+    }
+  ],
+  "warnings": [
+    {
+      "source": "openai",
+      "kind": "truncated",
+      "message": "Drug-protein map unusable (truncated); no literature-derived drugs"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/Mpro/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "Mpro"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PLpro/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PLpro"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/TMPRSS2/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "TMPRSS2"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/Cathepsins/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "Cathepsins"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/IL6R/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "IL6R"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/JAK2/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "JAK2"
+    }
+  ]
+}
