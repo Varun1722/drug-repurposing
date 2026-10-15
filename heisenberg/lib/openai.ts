@@ -72,7 +72,10 @@ async function postChatCompletion(
         ],
         // No custom temperature — some models (e.g. gpt-5.6-terra) only
         // support the default (1) and reject any other value.
-        max_completion_tokens: 8000,
+        // No max_completion_tokens: hidden reasoning counts toward it, and once the model spent all
+        // 8,000 tokens on reasoning and wrote no reply (finish_reason "length"). The route's time
+        // budget bounds a call instead. A model without reasoning rejects reasoning_effort (HTTP 400).
+        reasoning_effort: "medium",
         ...extra,
       }),
     },
@@ -215,7 +218,7 @@ async function structuredOnce<T extends z.ZodType>(
   if (choice?.finish_reason === "length") {
     throw new LLMOutputError(
       "truncated",
-      "Reply hit max_completion_tokens before the JSON was complete"
+      "Reply was cut off at the model's output limit before the JSON was complete"
     )
   }
   if (choice?.finish_reason === "content_filter") {

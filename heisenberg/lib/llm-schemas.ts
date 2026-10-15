@@ -29,13 +29,17 @@ export const DrugProteinMapSchema = z.object({
       proteins: z
         .array(z.string())
         .describe("Target protein symbols this drug may bind to"),
-      mechanism: z.string(),
-      fda_status: z.string(),
+      // These three fields were 92% of the reply (about 100 characters each), while the app
+      // shows or uses 60 to 100 characters: shorter text means a shorter, faster extraction.
+      mechanism: z.string().describe("How the drug acts, at most 12 words"),
+      fda_status: z
+        .string()
+        .describe('Regulatory status in at most 6 words, e.g. "FDA-approved", "Not approved" or "Investigational"'),
       category: z.enum(["mainstream", "repurposing_candidate"]),
       trial_status_for_targets: z
         .string()
         .describe(
-          'Clinical-trial status for the listed targets, or "No known trials for these targets"'
+          'Clinical-trial status for the listed targets in at most 12 words, e.g. "Phase 2 for KRAS G12C in NSCLC", or "No known trials for these targets"'
         ),
     })
   ),

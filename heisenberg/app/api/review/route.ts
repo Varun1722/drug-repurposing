@@ -1,9 +1,6 @@
 import { queryPrompt, queryPromptStructured, LLMOutputError } from "@/lib/openai"
-import {
-  ProteinListSchema,
-  DrugProteinMapSchema,
-  type DrugProteinMap,
-} from "@/lib/llm-schemas"
+import { ProteinListSchema } from "@/lib/llm-schemas"
+import { extractDrugMap } from "@/lib/drug-map"
 import { webSearch, formatSearchResultsForPrompt } from "@/lib/exa"
 import { searchCompoundsForTarget } from "@/lib/pubchem"
 import {
@@ -294,58 +291,6 @@ async function discoverRepurposingCandidates(
   )
 }
 
-// ---------- Drug-protein map extraction ----------
-
-async function extractDrugProteinMap(
-  drugReviewText: string,
-  disease: string,
-  proteins: string[],
-  options: OpenAICallOptions
-): Promise<{
-  drugs: ReviewDrug[]
-  disease: string
-  protein_targets: string[]
-  warning?: FailureWarning
-}> {
-  let rawDrugs: DrugProteinMap["drugs"] = []
-  let warning: FailureWarning | undefined
-  try {
-    const data = await queryPromptStructured(
-      "extraction/drug_protein_map",
-      { disease, proteins: proteins.join(", "), review_text: drugReviewText },
-      DrugProteinMapSchema,
-      options
-    )
-    rawDrugs = data.drugs
-  } catch (error) {
-    if (!(error instanceof LLMOutputError)) throw error
-    // Keep the pipeline going with no literature-derived drugs (bioactive
-    // compounds are still discovered per target), but make the gap visible.
-    console.error("Drug map: unusable LLM output:", error.kind, error.message)
-    warning = {
-      source: "openai",
-      kind: error.kind,
-      message: `Drug-protein map unusable (${error.kind}); no literature-derived drugs`,
-    }
-  }
-
-  const drugs: ReviewDrug[] = rawDrugs.map((d) => ({
-    drug: shortenDrugName(d.drug, null, 40) || "Unknown",
-    proteins: d.proteins,
-    mechanism: d.mechanism,
-    fdaStatus: d.fda_status,
-    category: d.category,
-    trialStatusForTargets: d.trial_status_for_targets,
-  }))
-
-  return {
-    drugs,
-    disease,
-    protein_targets: proteins,
-    warning,
-  }
-}
-
 // ---------- Route handler (SSE streaming) ----------
 
 export async function POST(req: Request) {
@@ -474,9 +419,17 @@ export async function POST(req: Request) {
 
           // Step 8: Extract drug-protein map
           send({ type: "progress", message: "Extracting drug-protein interaction map..." })
-          const combined = drugReview + "\n\n" + repurposingReview
-          const drugMap = await extractDrugProteinMap(combined, disease, proteins, callOptions())
-          if (drugMap.warning) warn(drugMap.warning)
+          // Each section on its own and at the same time: one call over both could come back cut off.
+          const drugMap = await extractDrugMap(
+            [
+              { label: "drug analysis", text: drugReview },
+              { label: "repurposing candidates", text: repurposingReview },
+            ],
+            disease,
+            proteins,
+            callOptions
+          )
+          drugMap.warnings.forEach(warn)
 
           // Step 9: Search PubChem for bioactive compounds targeting each protein
           send({ type: "progress", message: "Searching PubChem for bioactive compounds..." })
