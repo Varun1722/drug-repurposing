@@ -117,7 +117,10 @@ describe("queryOpenAIStructured / queryPrompt*", () => {
     assert.equal(lastBody.response_format.json_schema.strict, true)
     assert.equal(lastBody.response_format.json_schema.name, "ProteinList")
     assert.equal(lastBody.response_format.json_schema.schema.additionalProperties, false)
-    assert.equal(lastBody.max_completion_tokens, 8000)
+    // No output cap: hidden reasoning counts toward it, and in a real run the model spent all
+    // 8,000 tokens on reasoning and wrote no reply. Reasoning effort is set, not left to the model's default.
+    assert.equal("max_completion_tokens" in lastBody, false)
+    assert.equal(lastBody.reasoning_effort, "medium")
     assert.equal("temperature" in lastBody, false)
   })
 
@@ -280,5 +283,7 @@ describe("queryOpenAIStructured / queryPrompt*", () => {
     assert.equal(await queryPrompt("chat/answer", { context_block: "Context:\nx\n\n", question: "Which?" }), "an answer")
     assert.equal(lastBody.response_format, undefined)
     assert.match(lastBody.messages[1].content, /^Context:\nx\n\nQuestion: Which\?$/)
+    assert.equal("max_completion_tokens" in lastBody, false)
+    assert.equal(lastBody.reasoning_effort, "medium")
   })
 })
