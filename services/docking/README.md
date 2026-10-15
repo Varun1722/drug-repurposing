@@ -70,7 +70,9 @@ of holding a connection open, the app now:
 
 1. `POST /submit` with `{targets, round}` (same shape as the old
    `app/api/dock` body) — validates the batch (`MAX_TARGETS_PER_JOB=10`,
-   `MAX_LIGANDS_PER_JOB=50`, both in `gnina_worker.py`), spawns
+   `MAX_LIGANDS_PER_JOB=50`, both in `gnina_worker.py`; the web app splits bigger
+   runs into several jobs with `heisenberg/lib/dock-batches.ts`, and a web test
+   checks that its copy of the two numbers matches), spawns
    `run_docking_job` in the background via `.spawn()`, and returns
    `{jobId}` immediately.
 2. `GET /status/{job_id}?since=N` — returns `{events, nextIndex, done}`,

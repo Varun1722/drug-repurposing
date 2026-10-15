@@ -9,7 +9,7 @@
 // the next tick; stacking another retry layer here would only multiply waits.
 // Both throw ExternalCallError, which the routes turn into a 502.
 
-import { fetchWithRetry, responseJson } from "@/lib/retry"
+import { ExternalCallError, fetchWithRetry, responseJson } from "@/lib/retry"
 import type {
   DockingTarget,
   DockStatusResponse,
@@ -18,38 +18,56 @@ import type {
 
 const SINGLE_ATTEMPT = { maxAttempts: 1 } as const
 
-function jobApiUrl(path: string): string {
+function jobApiBase(): string {
   const base = process.env.GNINA_JOB_API_URL
   if (!base) throw new Error("GNINA_JOB_API_URL not set")
-  return `${base.replace(/\/$/, "")}${path}`
+  return base.replace(/\/$/, "")
 }
 
-export async function submitDockJob(
+/**
+ * One call to the job API. The API is unauthenticated, and error messages reach
+ * the browser (the page shows them), so its address is replaced by `<docking-api>`
+ * in any failure.
+ */
+async function callJobApi<T>(path: string, init: RequestInit, timeoutMs: number): Promise<T> {
+  const base = jobApiBase()
+  try {
+    const res = await fetchWithRetry(`${base}${path}`, init, {
+      source: "gnina",
+      policy: SINGLE_ATTEMPT,
+      timeoutMs,
+    })
+    return await responseJson<T>(res, "gnina")
+  } catch (error) {
+    if (error instanceof ExternalCallError) {
+      error.message = error.message.split(base).join("<docking-api>")
+    }
+    throw error
+  }
+}
+
+export function submitDockJob(
   targets: DockingTarget[],
   round: number
 ): Promise<DockSubmitResponse> {
-  const res = await fetchWithRetry(
-    jobApiUrl("/submit"),
+  return callJobApi<DockSubmitResponse>(
+    "/submit",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ targets, round }),
     },
-    { source: "gnina", policy: SINGLE_ATTEMPT, timeoutMs: 25_000 }
+    25_000
   )
-  return responseJson<DockSubmitResponse>(res, "gnina")
 }
 
-export async function pollDockJob(
+export function pollDockJob(
   jobId: string,
   since: number
 ): Promise<DockStatusResponse> {
-  const res = await fetchWithRetry(
-    jobApiUrl(
-      `/status/${encodeURIComponent(jobId)}?since=${encodeURIComponent(String(since))}`
-    ),
+  return callJobApi<DockStatusResponse>(
+    `/status/${encodeURIComponent(jobId)}?since=${encodeURIComponent(String(since))}`,
     {},
-    { source: "gnina", policy: SINGLE_ATTEMPT, timeoutMs: 20_000 }
+    20_000
   )
-  return responseJson<DockStatusResponse>(res, "gnina")
 }

@@ -8,6 +8,7 @@ import {
   BILLING_CODES,
   ExternalCallError,
   backoffDelayMs,
+  bodySnippet,
   classifyStatus,
   compactError,
   errorPayload,
@@ -283,6 +284,31 @@ describe("fetchWithRetry: Retry-After", () => {
     assert.equal(parseRetryAfterMs(h({ "retry-after": "Wed, 21 Oct 2015 07:00:00 GMT" }), now), 0)
     assert.equal(parseRetryAfterMs(h({ "retry-after": "soon" })), undefined)
     assert.equal(parseRetryAfterMs(h({})), undefined)
+  })
+})
+
+describe("bodySnippet", () => {
+  it("quotes the reason from the Modal job API (FastAPI puts it in `detail`)", () => {
+    const body = JSON.stringify({ detail: "job requests 60 ligands, max is 50" })
+    assert.equal(bodySnippet(body), "job requests 60 ligands, max is 50")
+  })
+
+  it("still reads OpenAI `error.message` and PubChem `Fault.Message`", () => {
+    assert.equal(bodySnippet(JSON.stringify({ error: { message: "bad key" } })), "bad key")
+    assert.equal(bodySnippet(JSON.stringify({ Fault: { Message: "no CIDs" } })), "no CIDs")
+  })
+
+  it("ignores a `detail` that is not a string (FastAPI validation errors are lists)", () => {
+    assert.equal(bodySnippet(JSON.stringify({ detail: [{ loc: ["body"], msg: "field required" }] })), "")
+  })
+
+  it("puts the reason into the error a failed call throws", async () => {
+    fetchMock.restore()
+    fetchMock = mockFetch({ [URL_]: res(400, { detail: "job requests 60 ligands, max is 50" }) })
+    await assert.rejects(
+      fetchWithRetry(URL_, {}, { source: "gnina" }),
+      (e: unknown) => e instanceof ExternalCallError && /HTTP 400: job requests 60 ligands, max is 50/.test(e.message)
+    )
   })
 })
 

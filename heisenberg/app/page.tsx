@@ -20,6 +20,7 @@ import { parseFdaCategory } from "@/lib/types"
 import type { FailureWarning } from "@/lib/retry"
 import { describeWarnings, errorMessageFrom } from "@/lib/warnings"
 import { pollDockJobUntilDone } from "@/lib/dock-polling"
+import { chunkDockTargets, dockInBatches } from "@/lib/dock-batches"
 import { mayExpandAfter } from "@/lib/rounds"
 
 type AppPhase =
@@ -576,63 +577,90 @@ export default function Home() {
     )
 
     try {
-      const submitRes = await fetch("/api/dock/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targets: dockTargets, round }),
-      })
+      // One docking job holds at most 10 targets / 50 pairs (and one request at
+      // most ~4.5 MB), so a bigger run is split into batches (lib/dock-batches.ts).
+      const batches = chunkDockTargets(dockTargets)
+      if (batches.length > 1) {
+        addMessage(
+          "assistant",
+          `That is more than one docking job can hold, so I'll run it in ${batches.length} batches, one after another.`
+        )
+      }
 
-      if (!submitRes.ok)
-        throw new Error(`Dock submit error: ${submitRes.status}`)
+      // One batch is one Modal job: submit it, then poll until it is done.
+      const dockBatch = async (batch: DockingTarget[], index: number) => {
+        const prefix = batches.length > 1 ? `Batch ${index + 1}/${batches.length}: ` : ""
 
-      const { jobId } = (await submitRes.json()) as { jobId: string }
+        const submitRes = await fetch("/api/dock/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targets: batch, round }),
+        })
+        if (!submitRes.ok) {
+          const reason = await errorMessageFrom(submitRes, `HTTP ${submitRes.status}`)
+          throw new Error(`Dock submit failed: ${reason}`)
+        }
+        const { jobId } = (await submitRes.json()) as { jobId: string }
 
-      let completedResults: DockingResult[] = []
+        let batchResults: DockingResult[] = []
 
-      // Docking runs in the background on Modal (no held-open connection,
-      // no Vercel duration limit) — poll for new events until done. A failed
-      // poll is retried on the next tick (see lib/dock-polling.ts).
-      await pollDockJobUntilDone({
-        jobId,
-        fetchStatus: (since) =>
-          fetch(`/api/dock/status?jobId=${encodeURIComponent(jobId)}&since=${since}`),
-        sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-        onRetry: (failed, max) =>
-          setStatusMessage(`Docking status check failed (${failed}/${max}); retrying...`),
-        onEvents: (events) => {
-          for (const event of events) {
-            if (event.type === "progress") {
-              setStatusMessage(event.message)
-            } else if (event.type === "target_complete") {
-              const targetResults = event.results
-              completedResults = [...completedResults, ...targetResults]
+        // Docking runs in the background on Modal (no held-open connection,
+        // no Vercel duration limit) — poll for new events until done. A failed
+        // poll is retried on the next tick (see lib/dock-polling.ts).
+        await pollDockJobUntilDone({
+          jobId,
+          fetchStatus: (since) =>
+            fetch(`/api/dock/status?jobId=${encodeURIComponent(jobId)}&since=${since}`),
+          sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+          onRetry: (failed, max) =>
+            setStatusMessage(`${prefix}Docking status check failed (${failed}/${max}); retrying...`),
+          onEvents: (events) => {
+            for (const event of events) {
+              if (event.type === "progress") {
+                setStatusMessage(`${prefix}${event.message}`)
+              } else if (event.type === "target_complete") {
+                const targetResults = event.results
+                batchResults = [...batchResults, ...targetResults]
 
-              const latestDrugs = drugsRef.current
-              setDrugSimStatuses((prev) => {
-                const next = { ...prev }
-                for (const r of targetResults) {
-                  const matchingDrug = latestDrugs?.find(
-                    (d) => d.name.toLowerCase() === r.name.toLowerCase()
-                  )
-                  if (matchingDrug) {
-                    next[matchingDrug.id] = "complete"
+                const latestDrugs = drugsRef.current
+                setDrugSimStatuses((prev) => {
+                  const next = { ...prev }
+                  for (const r of targetResults) {
+                    const matchingDrug = latestDrugs?.find(
+                      (d) => d.name.toLowerCase() === r.name.toLowerCase()
+                    )
+                    if (matchingDrug) {
+                      next[matchingDrug.id] = "complete"
+                    }
                   }
+                  return next
+                })
+              } else if (event.type === "complete") {
+                batchResults = event.allResults
+              } else if (event.type === "error") {
+                const msg = event.message
+                if (msg.includes("No valid ligands") || msg.includes("skipping")) {
+                  console.warn("Docking skipped:", msg)
+                } else {
+                  console.error("Docking error:", msg)
                 }
-                return next
-              })
-            } else if (event.type === "complete") {
-              completedResults = event.allResults
-            } else if (event.type === "error") {
-              const msg = event.message
-              if (msg.includes("No valid ligands") || msg.includes("skipping")) {
-                console.warn("Docking skipped:", msg)
-              } else {
-                console.error("Docking error:", msg)
               }
             }
-          }
-        },
-      })
+          },
+        })
+        return batchResults
+      }
+
+      // If a later batch fails, the earlier results are kept and the user is told.
+      const { results: completedResults, stoppedAt } = await dockInBatches({ batches, dockBatch })
+      if (stoppedAt) {
+        const kept = stoppedAt.batch - 1
+        addMessage(
+          "assistant",
+          `⚠️ Docking stopped at batch ${stoppedAt.batch} of ${stoppedAt.of}: ${stoppedAt.message}. ` +
+            `Results from the ${kept} earlier batch${kept === 1 ? "" : "es"} are kept; the remaining compounds were not docked.`
+        )
+      }
 
       // Update state with all results
       const newAllResults = [...allDockingResults, ...completedResults]

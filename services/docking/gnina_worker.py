@@ -52,6 +52,9 @@ FPOCKET_TIMEOUT_SECONDS = 60
 # ligands within a target concurrently, so a job's wall-clock time is
 # bounded by num_targets * DOCK_LIGAND_TIMEOUT_SECONDS in the worst case.
 DOCK_LIGAND_TIMEOUT_SECONDS = 600
+# The web app splits a run into jobs that fit these two caps
+# (heisenberg/lib/dock-batches.ts, DOCK_LIMITS). Change them together: a web
+# test reads these lines and fails if the two copies differ.
 MAX_TARGETS_PER_JOB = 10
 MAX_LIGANDS_PER_JOB = 50
 JOB_TIMEOUT_SECONDS = 3600  # hard ceiling on one job's total wall-clock time

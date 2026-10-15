@@ -264,6 +264,19 @@ describe("dock-jobs", () => {
     assert.match(http.calls[0].url, /status\/a%20b\?since=5$/)
   })
 
+  it("keeps the job API's address out of its errors (it is unauthenticated, and errors reach the browser)", async () => {
+    route({ "/submit": res(400, { detail: "job requests 60 ligands, max is 50" }) })
+    await assert.rejects(submitDockJob([], 1), (e: unknown) => {
+      assert.ok(e instanceof ExternalCallError)
+      assert.match(e.message, /HTTP 400: job requests 60 ligands, max is 50/, "the reason is kept")
+      assert.match(e.message, /<docking-api>\/submit/)
+      assert.doesNotMatch(e.message, /gnina\.test/)
+      return true
+    })
+    route({ "/status/": networkError() })
+    await assert.rejects(pollDockJob("j1", 0), (e: unknown) => e instanceof ExternalCallError && !/gnina\.test/.test(e.message))
+  })
+
   it("a missing URL is a configuration error, not an upstream failure", async () => {
     delete process.env.GNINA_JOB_API_URL
     await assert.rejects(pollDockJob("j1", 0), (e: unknown) => e instanceof Error && !(e instanceof ExternalCallError))

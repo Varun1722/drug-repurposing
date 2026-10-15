@@ -111,18 +111,19 @@ export function scrub(text: string): string {
 
 /**
  * The service's own explanation from an error body (OpenAI `error.message`,
- * PubChem `Fault.Message`, or short plain text), on one line. Empty if there is
- * none; HTML error pages are not quoted.
+ * PubChem `Fault.Message`, FastAPI `detail` as used by the Modal job API, or
+ * short plain text), on one line. Empty if there is none; HTML error pages
+ * are not quoted.
  */
 export function bodySnippet(body: string, limit = 160): string {
   if (!body || body.trimStart().startsWith("<")) return ""
   let text: string
   try {
-    const data = JSON.parse(body) as { error?: unknown; Fault?: { Message?: unknown } }
+    const data = JSON.parse(body) as { error?: unknown; detail?: unknown; Fault?: { Message?: unknown } }
     const err = data?.error
     const message =
       err && typeof err === "object" ? (err as { message?: unknown }).message : err
-    const picked = typeof message === "string" ? message : data?.Fault?.Message
+    const picked = typeof message === "string" ? message : (data?.Fault?.Message ?? data?.detail)
     text = typeof picked === "string" ? picked : ""
   } catch {
     text = body
