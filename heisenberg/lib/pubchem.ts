@@ -8,7 +8,7 @@ import { ExternalCallError, fetchWithRetry, responseJson } from "./retry"
 
 const PUBCHEM_BASE = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 const PUBCHEM_DELAY = 250 // ms between requests
-const PROPERTIES = "IsomericSMILES,CanonicalSMILES,IUPACName,MolecularFormula"
+const PROPERTIES = "IsomericSMILES,CanonicalSMILES,IUPACName,MolecularFormula,InChIKey"
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -19,6 +19,8 @@ export interface PubChemCompound {
   smiles: string
   iupacName: string
   molecularFormula: string
+  /** Standard InChIKey, the key ChEMBL is looked up by (lib/chembl.ts). "" if PubChem sent none. */
+  inchiKey: string
 }
 
 type PubChemProps = Record<string, unknown>
@@ -40,6 +42,7 @@ function toCompound(props: PubChemProps): PubChemCompound {
     smiles: smilesOf(props),
     iupacName: (props.IUPACName as string) || "",
     molecularFormula: (props.MolecularFormula as string) || "",
+    inchiKey: (props.InChIKey as string) || "",
   }
 }
 

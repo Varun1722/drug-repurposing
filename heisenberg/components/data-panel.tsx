@@ -57,34 +57,40 @@ function ConfidenceBar({ value }: { value: number | null }) {
   )
 }
 
-function FdaStatusBadge({ status }: { status: Drug["fdaCategory"] }) {
-  const config: Record<
-    Drug["fdaCategory"],
-    { label: string; className: string }
-  > = {
-    approved: {
-      label: "FDA Approved",
-      className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
-    },
-    "phase-3": {
-      label: "Phase 3",
-      className: "border-sky-500/30 bg-sky-500/10 text-sky-400",
-    },
-    "phase-2": {
-      label: "Phase 2",
-      className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-    },
-    "phase-1": {
-      label: "Phase 1",
-      className: "border-orange-500/30 bg-orange-500/10 text-orange-400",
+function StageBadge({ stage }: { stage: Drug["stage"] }) {
+  const config: Record<Drug["stage"], { label: string; className: string }> = {
+    unknown: {
+      label: "Unknown",
+      className:
+        "border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground",
     },
     preclinical: {
       label: "Preclinical",
       className:
         "border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground",
     },
+    "phase-1": {
+      label: "Phase 1",
+      className: "border-orange-500/30 bg-orange-500/10 text-orange-400",
+    },
+    "phase-2": {
+      label: "Phase 2",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    },
+    "phase-3": {
+      label: "Phase 3",
+      className: "border-sky-500/30 bg-sky-500/10 text-sky-400",
+    },
+    approved: {
+      label: "Approved",
+      className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    },
+    withdrawn: {
+      label: "Withdrawn",
+      className: "border-red-500/30 bg-red-500/10 text-red-400",
+    },
   }
-  const c = config[status]
+  const c = config[stage]
 
   return (
     <Badge variant="outline" className={`text-[10px] ${c.className}`}>
@@ -447,7 +453,7 @@ export function DataPanel({
                         </TableCell>
                         <TableCell className="py-2.5">
                           <div className="flex items-center gap-1">
-                            <FdaStatusBadge status={drug.fdaCategory} />
+                            <StageBadge stage={drug.stage} />
                             {drug.trialStatusForTargets && (
                               <Tooltip>
                                 <TooltipTrigger asChild>

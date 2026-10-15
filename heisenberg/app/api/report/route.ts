@@ -2,27 +2,13 @@ import { NextResponse } from "next/server"
 import { queryPrompt } from "@/lib/openai"
 import { promptVersions } from "@/lib/prompts"
 import { errorPayload, routeBudget } from "@/lib/retry"
+import { STAGE_LABELS, classifyCompound } from "@/lib/stage"
 import type { DockingResult, DockingTarget } from "@/lib/types"
 
 export const maxDuration = 180
 
-function classifyCompound(
-  fdaStatus: string,
-  disease: string
-): "disease_purposed" | "repurposing" | "novel" {
-  const s = fdaStatus.toLowerCase()
-  const diseaseLower = disease.toLowerCase()
-  if (s.includes("approved") && s.includes(diseaseLower.split(/\s+/)[0])) {
-    return "disease_purposed"
-  }
-  if (s.includes("approved") || s.includes("fda")) {
-    return "repurposing"
-  }
-  return "novel"
-}
-
 const CATEGORY_TABLE_HEADER =
-  "| Rank | Compound | Confidence | Mechanism | FDA Status | Source |\n" +
+  "| Rank | Compound | Confidence | Mechanism | Stage (ChEMBL) | Source |\n" +
   "|------|----------|------------|-----------|------------|--------|\n"
 
 /**
@@ -46,7 +32,7 @@ function formatCategoryBlock(
       .map(
         (c, i) =>
           `| ${i + 1} | ${c.name.slice(0, 80)} | ${c.confidenceScore.toFixed(4)} ` +
-          `| ${(c.mechanism || "").slice(0, 60)} | ${(c.fdaStatus || "").slice(0, 40)} ` +
+          `| ${(c.mechanism || "").slice(0, 60)} | ${STAGE_LABELS[c.stage ?? "unknown"]} ` +
           `| ${c.source || ""} |\n`
       )
       .join("")
@@ -96,7 +82,7 @@ export async function POST(req: Request) {
       novel: [],
     }
     for (const r of allResults) {
-      const cat = classifyCompound(r.fdaStatus, disease)
+      const cat = classifyCompound(r.stage, r.category)
       classified[cat].push(r)
     }
 
@@ -109,10 +95,10 @@ export async function POST(req: Request) {
     for (const target of targets) {
       const results = resultsByProtein[target.protein] || []
       overviewText += `### ${target.protein} (PDB: ${target.pdbId || "N/A"})\n\n`
-      overviewText += `| Rank | Drug | Score | FDA Status | Mechanism |\n`
+      overviewText += `| Rank | Drug | Score | Stage (ChEMBL) | Mechanism |\n`
       overviewText += `|------|------|-------|------------|------------|\n`
       for (const [i, r] of results.slice(0, 15).entries()) {
-        overviewText += `| ${i + 1} | ${r.name} | ${r.confidenceScore.toFixed(4)} | ${r.fdaStatus} | ${r.mechanism.slice(0, 60)} |\n`
+        overviewText += `| ${i + 1} | ${r.name} | ${r.confidenceScore.toFixed(4)} | ${STAGE_LABELS[r.stage ?? "unknown"]} | ${r.mechanism.slice(0, 60)} |\n`
       }
       overviewText += "\n"
     }

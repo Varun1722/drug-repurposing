@@ -1,7 +1,8 @@
 import { searchPdb, pickBestStructure, downloadPdb } from "@/lib/pdb"
+import { stageLookup } from "@/lib/chembl"
 import { lookupSmiles } from "@/lib/pubchem"
 import { errorPayload, toWarning, type FailureWarning } from "@/lib/retry"
-import type { ReviewDrug, DockingTarget, Ligand } from "@/lib/types"
+import type { ReviewDrug, DockingTarget, Ligand, Stage } from "@/lib/types"
 
 export const maxDuration = 120
 
@@ -38,6 +39,9 @@ export async function POST(req: Request) {
           warnings.push(warning)
           send({ type: "warning", warning })
         }
+
+        // One ChEMBL lookup per compound for the whole request, however many proteins want it.
+        const stageOf = stageLookup()
 
         try {
           send({
@@ -106,7 +110,16 @@ export async function POST(req: Request) {
               const lookupResults = await Promise.allSettled(
                 drugsForProtein.map(async (drugInfo) => {
                   const result = await lookupSmiles(drugInfo.drug)
-                  return { drugInfo, result }
+                  // A ChEMBL failure costs the drug its stage, not its place in the run.
+                  let stage: Stage = "unknown"
+                  if (result?.inchiKey) {
+                    try {
+                      stage = await stageOf(result.inchiKey)
+                    } catch (error) {
+                      warn(error, `${protein}/${drugInfo.drug}`)
+                    }
+                  }
+                  return { drugInfo, result, stage }
                 })
               )
 
@@ -118,7 +131,7 @@ export async function POST(req: Request) {
                   warn(r.reason, `${protein}/${drugsForProtein[i].drug}`)
                   continue
                 }
-                const { drugInfo, result } = r.value
+                const { drugInfo, result, stage } = r.value
                 const smiles = result?.smiles || ""
                 if (smiles) {
                   console.log(`[structures] ✓ ${drugInfo.drug} → CID ${result?.cid}`)
@@ -132,6 +145,8 @@ export async function POST(req: Request) {
                   mechanism: drugInfo.mechanism || "",
                   fdaStatus: drugInfo.fdaStatus || "Unknown",
                   source: result ? `pubchem_cid_${result.cid}` : "no_smiles",
+                  stage,
+                  category: drugInfo.category,
                 })
               }
 

@@ -6,6 +6,7 @@ import type { FailureWarning } from "./retry"
 
 const SOURCE_LABELS: Record<string, string> = {
   pubchem: "PubChem",
+  chembl: "ChEMBL",
   rcsb: "RCSB PDB",
   openai: "OpenAI",
   exa: "Exa web search",
