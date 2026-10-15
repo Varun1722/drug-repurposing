@@ -1,0 +1,195 @@
+{
+  "disease": "non-small cell lung cancer",
+  "recordedAt": "2026-10-15T16:39:50.279Z",
+  "proteins": [
+    "EGFR",
+    "ALK",
+    "ROS1",
+    "RET",
+    "TRKA",
+    "TRKB",
+    "TRKC",
+    "BRAF V600E",
+    "MET",
+    "KRAS",
+    "KRAS G12C",
+    "HER2",
+    "HER3",
+    "MEK",
+    "ERK",
+    "PI3K",
+    "AKT",
+    "mTOR",
+    "PD-1",
+    "PD-L1",
+    "CTLA-4",
+    "Nectin-4",
+    "FOLR1",
+    "ITGB6",
+    "ITGAV",
+    "PRMT5",
+    "TP53",
+    "STK11",
+    "KEAP1",
+    "RB1",
+    "LY6E"
+  ],
+  "drugs": [],
+  "warnings": [
+    {
+      "source": "openai",
+      "kind": "truncated",
+      "message": "Drug-protein map unusable (truncated); no literature-derived drugs"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/24867231,3038522,135398510,5329102,3038525,156422,5494449,11485656,208908,160355,6445562,216239,10113978,156414,11712649/property/IsomericSMILES,CanonicalSMILES,IUPACName,M…",
+      "target": "EGFR"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/11662893,11604436,11604739,11569457,11691146,11669784,11576099,11719817,11590126,5328940,447077,16038120,11626560,25113170,25210970/property/IsomericSMILES,CanonicalSMILES,…",
+      "target": "ALK"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/135421442,44259,44517769,11409972,11712649,9829523,10113978,5494449,44626349,49830364,25164272,136027066,2801166,25012250,1568886/property/IsomericSMILES,CanonicalSMILES,IU…",
+      "target": "ROS1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/RET/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "RET"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/gene/symbol/TRKB/cids/JSON: rate_limited (HTTP 429) after 3 attempt(s)",
+      "target": "TRKB"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/gene/symbol/TRKC/cids/JSON: rate_limited (HTTP 429) after 3 attempt(s)",
+      "target": "TRKC"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/24867231,135398510,3038522,160355,5494449,3038525,216239,156422,6445562,10113978,156414,123631,9926791,11617559,9884685/property/IsomericSMILES,CanonicalSMILES,IUPACName,Mo…",
+      "target": "BRAF V600E"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/10295633,135440466,11517688,11843159,44259,16043304,136193049,10217590,10151881,44446941,25032700,11627441,21081792,21081480,11555957/property/IsomericSMILES,CanonicalSMILE…",
+      "target": "MET"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/9870962,90665844,90665836,90665839,90665842,90665837,90665843,71515468,90665841,90665840,90665838,71736390,71721540,122177477,89827799/property/IsomericSMILES,CanonicalSMIL…",
+      "target": "KRAS"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/9870962,90665844,90665836,90665839,90665842,90665837,90665843,90665840,71515468,90665841,90665838,71736390,122177477,89827799,71721540/property/IsomericSMILES,CanonicalSMIL…",
+      "target": "KRAS G12C"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/HER3/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "HER3"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/MEK/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "MEK"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/PI3K/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "PI3K"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/AKT/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "AKT"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/mTOR/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "mTOR"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/Nectin-4/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "Nectin-4"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/FOLR1/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "FOLR1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/ITGB6/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "ITGB6"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/44344134,44344237,10432418,10002412,20691527,44344166,44344252,10320601,44344250,22678222,44344027,22678243,44461393,19076730,20666971/property/IsomericSMILES,CanonicalSMIL…",
+      "target": "ITGAV"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/70686225,53339032,118731742,118731739,118731732,122178085,90335237,90241632,90248419,86729240,90335157,90335234,76903068,86729237,90328811/property/IsomericSMILES,Canonical…",
+      "target": "PRMT5"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/TP53/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "TP53"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/STK11/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "STK11"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/KEAP1/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "KEAP1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "server",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/target/genesymbol/RB1/cids/JSON: server (HTTP 503: Too many requests or server too busy) after 1 attempt(s)",
+      "target": "RB1"
+    },
+    {
+      "source": "pubchem",
+      "kind": "rate_limited",
+      "message": "pubchem GET https://pubchem.ncbi.nlm.nih.gov/rest/pug/gene/symbol/LY6E/cids/JSON: rate_limited (HTTP 429) after 3 attempt(s)",
+      "target": "LY6E"
+    }
+  ]
+}

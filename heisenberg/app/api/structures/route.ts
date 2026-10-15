@@ -1,5 +1,6 @@
 import { searchPdb, pickBestStructure, downloadPdb } from "@/lib/pdb"
 import { stageLookup } from "@/lib/chembl"
+import { linkDrugsToProteins } from "@/lib/protein-match"
 import { lookupSmiles } from "@/lib/pubchem"
 import { errorPayload, toWarning, type FailureWarning } from "@/lib/retry"
 import type { ReviewDrug, DockingTarget, Ligand, Stage } from "@/lib/types"
@@ -42,6 +43,9 @@ export async function POST(req: Request) {
 
         // One ChEMBL lookup per compound for the whole request, however many proteins want it.
         const stageOf = stageLookup()
+
+        // Which drugs go to which protein, from the review's own listing (see lib/protein-match.ts).
+        const links = linkDrugsToProteins(proteins, drugs ?? [])
 
         try {
           send({
@@ -91,19 +95,14 @@ export async function POST(req: Request) {
 
             const smilesPromise = (async () => {
               const ligands: Ligand[] = []
-              const proteinLower = protein.toLowerCase()
-
-              const matchedDrugs = drugs.filter((d) =>
-                (d.proteins || []).some((p) => {
-                  const pl = p.toLowerCase()
-                  return pl.includes(proteinLower) || proteinLower.includes(pl)
-                })
-              )
-              const drugsForProtein = matchedDrugs.length > 0 ? matchedDrugs : drugs
+              const drugsForProtein = links.drugsByProtein[pi]
 
               send({
                 type: "progress",
-                message: `Looking up SMILES for ${drugsForProtein.length} drugs targeting ${protein}...`,
+                message:
+                  drugsForProtein.length > 0
+                    ? `Looking up SMILES for ${drugsForProtein.length} drugs targeting ${protein}...`
+                    : `No drug found for ${protein}; it will not be docked.`,
               })
 
               // Look up all drugs concurrently (PubChem has internal delays)
@@ -193,6 +192,8 @@ export async function POST(req: Request) {
             type: "complete",
             targets,
             warnings,
+            proteinsWithoutDrugs: links.proteinsWithoutDrugs,
+            drugsWithoutProtein: links.drugsWithoutProtein,
           })
         } catch (err) {
           send({
