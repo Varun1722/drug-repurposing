@@ -21,6 +21,7 @@ import type { FailureWarning } from "@/lib/retry"
 import { describeWarnings, errorMessageFrom } from "@/lib/warnings"
 import { pollDockJobUntilDone } from "@/lib/dock-polling"
 import { chunkDockTargets, dockInBatches } from "@/lib/dock-batches"
+import { StreamError, readSSEStream } from "@/lib/sse"
 import { mayExpandAfter } from "@/lib/rounds"
 
 type AppPhase =
@@ -155,36 +156,6 @@ function dockingResultToDisplay(result: DockingResult, index: number): Drug {
     confidenceScore: result.confidenceScore,
     proteinTarget: result.proteinTarget,
     round: result.round,
-  }
-}
-
-/** Helper to read an SSE stream and dispatch events via callback */
-async function readSSEStream(
-  response: Response,
-  onEvent: (event: Record<string, unknown>) => void
-) {
-  if (!response.body) throw new Error("No response body")
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ""
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split("\n\n")
-    buffer = lines.pop() || ""
-
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue
-      try {
-        const event = JSON.parse(line.slice(6))
-        onEvent(event)
-      } catch {
-        // skip unparseable
-      }
-    }
   }
 }
 
@@ -393,10 +364,8 @@ export default function Home() {
             )
           } else if (event.type === "warning") {
             failedCalls.push(event.warning as FailureWarning)
-          } else if (event.type === "error") {
-            throw new Error(event.message as string)
           }
-        })
+        }, "literature review")
 
         // --- Structures SSE stream ---
         setPhase("fetching-structures")
@@ -416,31 +385,41 @@ export default function Home() {
 
         const collectedTargets: DockingTarget[] = []
 
-        await readSSEStream(structRes, (event) => {
-          if (event.type === "progress") {
-            setStatusMessage(event.message as string)
-          } else if (event.type === "target") {
-            const target = event.target as DockingTarget
-            collectedTargets.push(target)
+        try {
+          await readSSEStream(structRes, (event) => {
+            if (event.type === "progress") {
+              setStatusMessage(event.message as string)
+            } else if (event.type === "target") {
+              const target = event.target as DockingTarget
+              collectedTargets.push(target)
 
-            setProteins((prev) => {
-              if (!prev) return prev
-              return prev.map((p) =>
-                p.name === target.protein
-                  ? { ...p, pdbId: target.pdbId }
-                  : p
-              )
-            })
-          } else if (event.type === "complete") {
-            const finalTargets =
-              (event.targets as DockingTarget[]) || collectedTargets
-            setTargets(finalTargets)
-          } else if (event.type === "warning") {
-            failedCalls.push(event.warning as FailureWarning)
-          } else if (event.type === "error") {
-            console.error("Structures error:", event.message)
-          }
-        })
+              setProteins((prev) => {
+                if (!prev) return prev
+                return prev.map((p) =>
+                  p.name === target.protein
+                    ? { ...p, pdbId: target.pdbId }
+                    : p
+                )
+              })
+            } else if (event.type === "complete") {
+              const finalTargets =
+                (event.targets as DockingTarget[]) || collectedTargets
+              setTargets(finalTargets)
+            } else if (event.type === "warning") {
+              failedCalls.push(event.warning as FailureWarning)
+            }
+          }, "structure lookup")
+        } catch (error) {
+          // The lookup stopped early. The proteins that finished are still usable, so
+          // keep them and say so. With none there is nothing to dock: fail.
+          if (!(error instanceof StreamError) || collectedTargets.length === 0) throw error
+          const why =
+            error.kind === "server" ? `The structure lookup failed: ${error.message}.` : error.message
+          addMessage(
+            "assistant",
+            `⚠️ ${why} Continuing with the ${collectedTargets.length} of ${reviewProteins.length} proteins that finished.`
+          )
+        }
 
         // Fallback if complete event didn't fire properly
         if (collectedTargets.length > 0) {
