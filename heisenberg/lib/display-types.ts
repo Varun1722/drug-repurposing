@@ -1,6 +1,8 @@
 // Display types — used by frontend components
 // These map to the real pipeline data from API routes
 
+import type { Stage } from "./types"
+
 export interface Protein {
   id: string
   name: string
@@ -16,7 +18,8 @@ export interface Drug {
   name: string
   mechanism: string
   fdaStatus: string
-  fdaCategory: "approved" | "phase-3" | "phase-2" | "phase-1" | "preclinical"
+  /** Development stage from ChEMBL; "unknown" until the structures step has looked it up. */
+  stage: Stage
   targetProteins: string[]
   category: string
   smiles: string | null

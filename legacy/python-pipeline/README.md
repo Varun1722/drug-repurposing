@@ -36,7 +36,7 @@ It reads `OPENAI_API_KEY`, `EXA_API_KEY` and `GNINA_ENDPOINT_URL` (the old **syn
 ## Known behaviour the TypeScript side does not have yet
 
 - SMILES canonicalization and CIF→PDB conversion (RDKit / gemmi).
-- The stricter `classify_compound` rule (`results.py`); the TS classifier disagrees with it on some inputs.
+- `classify_compound` (`results.py`) is not to be ported: the web app now takes the development stage from ChEMBL (`heisenberg/lib/chembl.ts`). The rule here also misreads some inputs (it needs the literal "fda", and "Not FDA-approved" still counts as approved).
 - A real XML parser for PubMed (`defusedxml`); the TS side parses with regexes.
 - The two extra paper sections (`prompts/paper/therapeutic_landscape.prompt`, `prompts/paper/conclusion.prompt` in this folder's snapshot).
 - Unattended, fully automatic runs and the saved `prompt_versions` record per run.

@@ -15,6 +15,7 @@ const ligand = (name: string): Ligand => ({
   mechanism: "",
   fdaStatus: "",
   source: "",
+  stage: "unknown",
 })
 
 /** A target named `protein` with `n` ligands and a receptor of `pdbChars` characters. */

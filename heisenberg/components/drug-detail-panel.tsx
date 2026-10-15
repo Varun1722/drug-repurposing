@@ -23,39 +23,49 @@ function extractCid(source: string | null): number | null {
   return match ? parseInt(match[1], 10) : null
 }
 
-function FdaStatusDisplay({ drug }: { drug: Drug }) {
-  const categoryConfig: Record<
-    Drug["fdaCategory"],
+function StageDisplay({ drug }: { drug: Drug }) {
+  const stageConfig: Record<
+    Drug["stage"],
     { label: string; color: string; bgColor: string }
   > = {
-    approved: {
-      label: "FDA Approved",
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-500/10 border-emerald-500/20",
-    },
-    "phase-3": {
-      label: "Phase 3 Trials",
-      color: "text-sky-400",
-      bgColor: "bg-sky-500/10 border-sky-500/20",
-    },
-    "phase-2": {
-      label: "Phase 2 Trials",
-      color: "text-amber-400",
-      bgColor: "bg-amber-500/10 border-amber-500/20",
-    },
-    "phase-1": {
-      label: "Phase 1 Trials",
-      color: "text-orange-400",
-      bgColor: "bg-orange-500/10 border-orange-500/20",
+    unknown: {
+      label: "Stage unknown",
+      color: "text-muted-foreground",
+      bgColor: "bg-muted/50 border-muted-foreground/20",
     },
     preclinical: {
       label: "Preclinical",
       color: "text-muted-foreground",
       bgColor: "bg-muted/50 border-muted-foreground/20",
     },
+    "phase-1": {
+      label: "Phase 1 Trials",
+      color: "text-orange-400",
+      bgColor: "bg-orange-500/10 border-orange-500/20",
+    },
+    "phase-2": {
+      label: "Phase 2 Trials",
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10 border-amber-500/20",
+    },
+    "phase-3": {
+      label: "Phase 3 Trials",
+      color: "text-sky-400",
+      bgColor: "bg-sky-500/10 border-sky-500/20",
+    },
+    approved: {
+      label: "Approved",
+      color: "text-emerald-400",
+      bgColor: "bg-emerald-500/10 border-emerald-500/20",
+    },
+    withdrawn: {
+      label: "Withdrawn",
+      color: "text-red-400",
+      bgColor: "bg-red-500/10 border-red-500/20",
+    },
   }
 
-  const c = categoryConfig[drug.fdaCategory]
+  const c = stageConfig[drug.stage]
 
   return (
     <div className={`rounded-lg border p-3 ${c.bgColor}`}>
@@ -64,7 +74,7 @@ function FdaStatusDisplay({ drug }: { drug: Drug }) {
         <span className={`text-sm font-semibold ${c.color}`}>{c.label}</span>
       </div>
       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-        {drug.fdaStatus}
+        Reported status: {drug.fdaStatus}
       </p>
     </div>
   )
@@ -148,7 +158,7 @@ function DrugResultContent({ drug }: { drug: Drug }) {
           )}
         </div>
         <div className="flex flex-col gap-3">
-          <FdaStatusDisplay drug={drug} />
+          <StageDisplay drug={drug} />
         </div>
       </div>
 

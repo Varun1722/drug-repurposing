@@ -1,5 +1,19 @@
 // Pipeline types — shared between API routes and frontend
 
+// How far a compound has got in drug development, from ChEMBL (lib/chembl.ts).
+// The order is the display order, not a ranking: `withdrawn` is an outcome, not a
+// step after `approved`. `unknown` means ChEMBL has no usable answer.
+export const STAGES = [
+  "unknown",
+  "preclinical",
+  "phase-1",
+  "phase-2",
+  "phase-3",
+  "approved",
+  "withdrawn",
+] as const
+export type Stage = (typeof STAGES)[number]
+
 export interface ReviewDrug {
   drug: string
   proteins: string[]
@@ -13,8 +27,12 @@ export interface Ligand {
   name: string
   smiles: string
   mechanism: string
+  /** The literature review's wording, for display. The stage below is what code reads. */
   fdaStatus: string
   source: string
+  stage: Stage
+  /** "mainstream" or "repurposing_candidate", from the literature review (absent for compounds found by search). */
+  category?: string
 }
 
 export interface DockingTarget {
@@ -35,6 +53,9 @@ export interface DockingResult {
   pdbId: string
   round: number
   allPoses?: unknown[]
+  /** Not sent back by the docking worker; added from the ligand by attachStages (lib/stage.ts). */
+  stage?: Stage
+  category?: string
 }
 
 export interface ReasoningDecision {
@@ -44,33 +65,6 @@ export interface ReasoningDecision {
   seedCids?: number[]
   drugClass?: string
   drugNames?: string[]
-}
-
-// Frontend display types (adapted from pipeline types)
-export interface DisplayProtein {
-  id: string
-  name: string
-  gene: string
-  pdbId: string | null
-  role: string
-  pathwayInvolvement: string
-}
-
-export interface DisplayDrug {
-  id: string
-  name: string
-  mechanism: string
-  fdaStatus: string
-  fdaCategory: "approved" | "phase-3" | "phase-2" | "phase-1" | "preclinical"
-  targetProteins: string[]
-  category: string
-  smiles: string | null
-  source: string | null
-  confidenceScore: number | null
-  confidenceRaw: number | null
-  proteinTarget: string | null
-  round: number
-  trialStatusForTargets?: string
 }
 
 // Chat types
@@ -145,70 +139,4 @@ export function shortenDrugName(
     return cid ? `CID_${cid}` : name || "Unknown"
   }
   return name
-}
-
-// Helper: parse FDA status string into display category
-export function parseFdaCategory(
-  status: string | undefined | null
-): DisplayDrug["fdaCategory"] {
-  if (!status) return "preclinical"
-  const s = status.toLowerCase()
-  if (s.includes("approved") || s.includes("fda")) return "approved"
-  if (s.includes("phase 3") || s.includes("phase-3") || s.includes("phase3"))
-    return "phase-3"
-  if (s.includes("phase 2") || s.includes("phase-2") || s.includes("phase2"))
-    return "phase-2"
-  if (
-    s.includes("phase 1") ||
-    s.includes("phase-1") ||
-    s.includes("phase1") ||
-    s.includes("early")
-  )
-    return "phase-1"
-  return "preclinical"
-}
-
-// Helper: convert ReviewDrug to DisplayDrug (before docking)
-export function reviewDrugToDisplay(
-  drug: ReviewDrug,
-  index: number
-): DisplayDrug {
-  return {
-    id: `drug-${index}`,
-    name: drug.drug,
-    mechanism: drug.mechanism,
-    fdaStatus: drug.fdaStatus,
-    fdaCategory: parseFdaCategory(drug.fdaStatus),
-    targetProteins: drug.proteins,
-    category: drug.category,
-    smiles: null,
-    source: null,
-    confidenceScore: null,
-    confidenceRaw: null,
-    proteinTarget: null,
-    round: 0,
-    trialStatusForTargets: drug.trialStatusForTargets,
-  }
-}
-
-// Helper: convert DockingResult to DisplayDrug (after docking)
-export function dockingResultToDisplay(
-  result: DockingResult,
-  index: number
-): DisplayDrug {
-  return {
-    id: `docked-${index}`,
-    name: result.name,
-    mechanism: result.mechanism,
-    fdaStatus: result.fdaStatus,
-    fdaCategory: parseFdaCategory(result.fdaStatus),
-    targetProteins: [result.proteinTarget],
-    category: "",
-    smiles: null,
-    source: result.source,
-    confidenceScore: result.confidenceScore,
-    confidenceRaw: result.confidenceRaw,
-    proteinTarget: result.proteinTarget,
-    round: result.round,
-  }
 }

@@ -49,6 +49,13 @@ describe("pubchem.lookupSmiles", () => {
     assert.deepEqual([r?.cid, r?.smiles], [5394, "CC1=NN=C2N1C=NC2=O"])
   })
 
+  it("returns the InChIKey, and asks PubChem for it (ChEMBL is looked up by it)", async () => {
+    route({ "compound/name/": res(200, table({ ...props(5394), InChIKey: "BPEGJWRSRHCHSN-UHFFFAOYSA-N" })) })
+    const r = await lookupSmiles("temozolomide")
+    assert.equal(r?.inchiKey, "BPEGJWRSRHCHSN-UHFFFAOYSA-N")
+    assert.match(http.calls[0].url, /InChIKey/)
+  })
+
   it("404 is 'not found': null, no retry", async () => {
     route({ "compound/name/": res(404) })
     assert.equal(await lookupSmiles("zoldonrasib"), null)

@@ -16,13 +16,13 @@ import type {
   ChatMessage,
   ChatAction,
 } from "@/lib/types"
-import { parseFdaCategory } from "@/lib/types"
 import type { FailureWarning } from "@/lib/retry"
 import { describeWarnings, errorMessageFrom } from "@/lib/warnings"
 import { pollDockJobUntilDone } from "@/lib/dock-polling"
 import { chunkDockTargets, dockInBatches } from "@/lib/dock-batches"
 import { StreamError, readSSEStream } from "@/lib/sse"
 import { mayExpandAfter } from "@/lib/rounds"
+import { attachStages } from "@/lib/stage"
 
 type AppPhase =
   | "idle"
@@ -129,7 +129,8 @@ function reviewDrugToDisplay(drug: ReviewDrug, index: number): Drug {
     name: drug.drug || "Unknown",
     mechanism: drug.mechanism || "",
     fdaStatus: drug.fdaStatus || "Unknown",
-    fdaCategory: parseFdaCategory(drug.fdaStatus),
+    // ChEMBL is asked in the structures step; the table is rebuilt with the stage then.
+    stage: "unknown",
     targetProteins: drug.proteins || [],
     category: drug.category || "",
     smiles: null,
@@ -148,7 +149,7 @@ function dockingResultToDisplay(result: DockingResult, index: number): Drug {
     name: result.name,
     mechanism: result.mechanism,
     fdaStatus: result.fdaStatus,
-    fdaCategory: parseFdaCategory(result.fdaStatus),
+    stage: result.stage ?? "unknown",
     targetProteins: [result.proteinTarget],
     category: "",
     smiles: null,
@@ -429,13 +430,14 @@ export default function Home() {
         // Rebuild drug table to only include drugs that have SMILES in targets,
         // and enrich with SMILES/source from the ligand data for 3D viewing
         const finalTargets = collectedTargets
-        const ligandLookup = new Map<string, { smiles: string; source: string }>()
+        const ligandLookup = new Map<string, { smiles: string; source: string; stage: Drug["stage"] }>()
         for (const t of finalTargets) {
           for (const l of t.ligands) {
             if (l.smiles && !ligandLookup.has(l.name.toLowerCase())) {
               ligandLookup.set(l.name.toLowerCase(), {
                 smiles: l.smiles,
                 source: l.source,
+                stage: l.stage,
               })
             }
           }
@@ -450,6 +452,7 @@ export default function Home() {
               if (ligData) {
                 display.smiles = ligData.smiles
                 display.source = ligData.source
+                display.stage = ligData.stage
               }
               return display
             })
@@ -627,7 +630,7 @@ export default function Home() {
             }
           },
         })
-        return batchResults
+        return attachStages(batchResults, batch)
       }
 
       // If a later batch fails, the earlier results are kept and the user is told.
@@ -923,7 +926,7 @@ export default function Home() {
               name: lig.name,
               mechanism: lig.mechanism,
               fdaStatus: lig.fdaStatus,
-              fdaCategory: parseFdaCategory(lig.fdaStatus),
+              stage: lig.stage,
               targetProteins: [...proteins],
               category: "repurposing_candidate",
               smiles: lig.smiles,
@@ -1107,7 +1110,7 @@ export default function Home() {
           name: lig.name,
           mechanism: lig.mechanism,
           fdaStatus: lig.fdaStatus,
-          fdaCategory: parseFdaCategory(lig.fdaStatus),
+          stage: lig.stage,
           targetProteins: [...proteins],
           category: "repurposing_candidate",
           smiles: lig.smiles,

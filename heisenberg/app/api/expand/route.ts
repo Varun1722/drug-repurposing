@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { queryPromptStructured, LLMOutputError } from "@/lib/openai"
 import { DrugNameListSchema } from "@/lib/llm-schemas"
+import { stageLookup } from "@/lib/chembl"
 import { lookupSmiles, search3dSimilar } from "@/lib/pubchem"
-import type { ReasoningDecision, DockingTarget, DockingResult, Ligand } from "@/lib/types"
+import type { ReasoningDecision, DockingTarget, DockingResult, Ligand, Stage } from "@/lib/types"
 import { shortenDrugName } from "@/lib/types"
 import { errorPayload, toWarning, type FailureWarning } from "@/lib/retry"
 
@@ -34,6 +35,19 @@ export async function POST(req: Request) {
     // means "the search failed", not "nothing similar exists"; the UI says which.
     const warnings: FailureWarning[] = []
 
+    // One ChEMBL lookup per compound. A failure costs the compound its stage,
+    // not its place in the run, and is reported like the PubChem ones.
+    const stageOf = stageLookup()
+    async function stageFor(inchiKey: string, target: string): Promise<Stage> {
+      if (!inchiKey) return "unknown"
+      try {
+        return await stageOf(inchiKey)
+      } catch (error) {
+        warnings.push(toWarning(error, target))
+        return "unknown"
+      }
+    }
+
     if (decision.action === "expand_3d_similar") {
       let seedCids = decision.seedCids || []
 
@@ -54,7 +68,11 @@ export async function POST(req: Request) {
 
       // Search all seed CIDs in parallel
       const similarResults = await Promise.allSettled(
-        seedCids.map((cid) => search3dSimilar(cid, 20))
+        seedCids.map(async (cid) => {
+          const similar = await search3dSimilar(cid, 20)
+          const stages = await Promise.all(similar.map((c) => stageFor(c.inchiKey, `CID ${c.cid}`)))
+          return similar.map((compound, i) => ({ compound, stage: stages[i] }))
+        })
       )
 
       for (let i = 0; i < seedCids.length; i++) {
@@ -64,7 +82,7 @@ export async function POST(req: Request) {
           continue
         }
         const cid = seedCids[i]
-        for (const c of r.value) {
+        for (const { compound: c, stage } of r.value) {
           if (!c.smiles) continue
           const lig: Ligand = {
             name: shortenDrugName(c.iupacName, c.cid),
@@ -72,6 +90,7 @@ export async function POST(req: Request) {
             mechanism: `3D-similar to CID ${cid} (ST≥0.80, CT≥0.50)`,
             fdaStatus: "Unknown — requires verification",
             source: `pubchem_3dsim_cid_${c.cid}_from_${cid}`,
+            stage,
           }
           for (const protein of proteins) {
             if (!newLigandsByProtein[protein]) newLigandsByProtein[protein] = []
@@ -113,7 +132,8 @@ export async function POST(req: Request) {
       const lookupResults = await Promise.allSettled(
         drugNames.map(async (drugName) => {
           const result = await lookupSmiles(drugName)
-          return { drugName, result }
+          const stage = result?.inchiKey ? await stageFor(result.inchiKey, drugName) : "unknown"
+          return { drugName, result, stage }
         })
       )
 
@@ -123,7 +143,7 @@ export async function POST(req: Request) {
           warnings.push(toWarning(r.reason, drugNames[i]))
           continue
         }
-        const { drugName, result } = r.value
+        const { drugName, result, stage } = r.value
         if (!result?.smiles) continue
 
         const lig: Ligand = {
@@ -132,6 +152,7 @@ export async function POST(req: Request) {
           mechanism: `Class expansion: ${decision.drugClass || "unknown"}`,
           fdaStatus: "FDA-approved — requires indication verification",
           source: `pubchem_cid_${result.cid}`,
+          stage,
         }
         for (const protein of proteins) {
           if (!newLigandsByProtein[protein]) newLigandsByProtein[protein] = []

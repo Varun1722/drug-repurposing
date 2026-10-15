@@ -1,0 +1,286 @@
+{
+ "metformin": {
+  "key": "XZWYZXLIPXDOLR-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "4.0",
+     "molecule_chembl_id": "CHEMBL1431",
+     "withdrawn_flag": false
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  }
+ },
+ "ibuprofen": {
+  "key": "HEFNNWSXXWATRW-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "4.0",
+     "molecule_chembl_id": "CHEMBL521",
+     "withdrawn_flag": false
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  }
+ },
+ "rofecoxib": {
+  "key": "RZJQGNCSTQAWON-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "4.0",
+     "molecule_chembl_id": "CHEMBL122",
+     "withdrawn_flag": true
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  },
+  "warning": {
+   "drug_warnings": [
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    },
+    {
+     "warning_country": "Worldwide"
+    }
+   ],
+   "page_meta": {
+    "limit": 100,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 10
+   }
+  }
+ },
+ "thalidomide": {
+  "key": "UEJJHQNACJXSKW-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "4.0",
+     "molecule_chembl_id": "CHEMBL468",
+     "withdrawn_flag": true
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  },
+  "warning": {
+   "drug_warnings": [
+    {
+     "warning_country": "Finland"
+    }
+   ],
+   "page_meta": {
+    "limit": 100,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  }
+ },
+ "troglitazone": {
+  "key": "GXPHKUHSUJUWKP-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "4.0",
+     "molecule_chembl_id": "CHEMBL408",
+     "withdrawn_flag": true
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  },
+  "warning": {
+   "drug_warnings": [
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    },
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    },
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    },
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    },
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    },
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    },
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    },
+    {
+     "warning_country": "Peru; United Kingdom; United States"
+    }
+   ],
+   "page_meta": {
+    "limit": 100,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 8
+   }
+  }
+ },
+ "telaglenastat": {
+  "key": "PRAAPINBUWJLGA-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "2.0",
+     "molecule_chembl_id": "CHEMBL3639788",
+     "withdrawn_flag": false
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  }
+ },
+ "LY294002": {
+  "key": "CZQHHVNHHHRRDU-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "-1.0",
+     "molecule_chembl_id": "CHEMBL98350",
+     "withdrawn_flag": false
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  }
+ },
+ "SB203580": {
+  "key": "CDMGBJANTYXAIV-UHFFFAOYSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": null,
+     "molecule_chembl_id": "CHEMBL10",
+     "withdrawn_flag": false
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  }
+ },
+ "trovafloxacin": {
+  "key": "WVPSKSLAZQPAKQ-CDMJZVDBSA-N",
+  "molecule": {
+   "molecules": [
+    {
+     "max_phase": "4.0",
+     "molecule_chembl_id": "CHEMBL428",
+     "withdrawn_flag": true
+    }
+   ],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+   }
+  },
+  "warning": {
+   "drug_warnings": [],
+   "page_meta": {
+    "limit": 100,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 0
+   }
+  }
+ },
+ "__not_in_chembl": {
+  "key": "AAAAAAAAAAAAAA-BBBBBBBBBB-N",
+  "molecule": {
+   "molecules": [],
+   "page_meta": {
+    "limit": 20,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 0
+   }
+  }
+ }
+}
